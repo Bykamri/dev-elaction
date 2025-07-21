@@ -23,19 +23,25 @@ type NotificationOptions = {
 };
 
 const ENUM_STATUSES = {
-  success: <CheckCircleIcon className="w-7 text-success" />,
-  loading: <span className="w-6 loading loading-spinner"></span>,
-  error: <ExclamationCircleIcon className="w-7 text-error" />,
-  info: <InformationCircleIcon className="w-7 text-info" />,
-  warning: <ExclamationTriangleIcon className="w-7 text-warning" />,
+  success: <CheckCircleIcon className="h-7 w-7 text-green-500" />,
+
+  loading: (
+    <div
+      className="h-6 w-6 animate-spin rounded-full border-4 border-solid border-slate-500 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+      role="status"
+    ></div>
+  ),
+
+  error: <ExclamationCircleIcon className="h-7 w-7 text-red-500" />,
+
+  info: <InformationCircleIcon className="h-7 w-7 text-blue-500" />,
+
+  warning: <ExclamationTriangleIcon className="h-7 w-7 text-yellow-500" />,
 };
 
 const DEFAULT_DURATION = 3000;
 const DEFAULT_POSITION: ToastPosition = "top-center";
 
-/**
- * Custom Notification
- */
 const Notification = ({
   content,
   status,
@@ -46,7 +52,7 @@ const Notification = ({
   return toast.custom(
     (t: Toast) => (
       <div
-        className={`flex flex-row items-start justify-between max-w-sm rounded-xl shadow-center shadow-accent bg-base-200 p-4 transform-gpu relative transition-all duration-500 ease-in-out space-x-2
+        className={`flex w-full max-w-sm transform-gpu flex-row items-start justify-between space-x-4 rounded-xl bg-white p-4 shadow-lg ring-1 ring-black ring-opacity-5 transition-all duration-500 ease-in-out dark:bg-slate-800
         ${
           position.substring(0, 3) == "top"
             ? `hover:translate-y-1 ${t.visible ? "top-0" : "-top-96"}`
@@ -57,7 +63,10 @@ const Notification = ({
         <div className={`overflow-x-hidden break-words whitespace-pre-line ${icon ? "mt-1" : ""}`}>{content}</div>
 
         <div className={`cursor-pointer text-lg ${icon ? "mt-1" : ""}`} onClick={() => toast.dismiss(t.id)}>
-          <XMarkIcon className="w-6 cursor-pointer" onClick={() => toast.remove(t.id)} />
+          <XMarkIcon
+            className="h-6 w-6 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            onClick={() => toast.remove(t.id)}
+          />
         </div>
       </div>
     ),
