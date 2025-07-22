@@ -122,7 +122,7 @@ export const Header = () => {
           <Link href="/" passHref className="flex items-center gap-2 ml-4 mr-6 shrink-0">
             <div className="flex items-center space-x-2">
               <Gavel className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold">AuctionHub</span>
+              <span className="text-xl font-bold">Elaction</span>
             </div>
           </Link>
           <NavigationMenu className="hidden md:flex flex-1 justify-center">
@@ -149,7 +149,7 @@ export const Header = () => {
                   <Link href="/" className="flex items-center gap-2 mb-6" onClick={() => setIsDrawerOpen(false)}>
                     <div className="flex items-center space-x-2">
                       <Gavel className="h-8 w-8 text-primary" />
-                      <span className="text-xl font-bold">AuctionHub</span>
+                      <span className="text-xl font-bold"> Elaction</span>
                     </div>
                   </Link>
                 </SheetTitle>
