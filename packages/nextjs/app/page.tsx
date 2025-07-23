@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ArrowRight, Globe, Shield, TrendingUp, Zap } from "lucide-react";
 import { Gavel, Star, Users } from "lucide-react";
 import { Lock } from "lucide-react";
+import { WelcomeDialog } from "~~/components/WelcomeDialog";
 import heroImage from "~~/components/assets/hero-image.jpg";
 import { Badge } from "~~/components/ui/badge";
 import { Button } from "~~/components/ui/button";
@@ -47,6 +48,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <WelcomeDialog />
       <section className="relative py-20 px-4 overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-100/20 via-background/50 to-background" />
 
