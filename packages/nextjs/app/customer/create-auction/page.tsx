@@ -7,7 +7,6 @@ import { ImageIcon, UploadCloud, XCircle } from "lucide-react";
 import { parseEther } from "viem";
 import { useWalletClient } from "wagmi";
 import { ApplicationStatus } from "~~/components/request-auction/application-status";
-import { ApplicationTimeline } from "~~/components/request-auction/application-timeline";
 import { Button } from "~~/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~~/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "~~/components/ui/dialog";
@@ -140,7 +139,7 @@ const AuctionSpecificsForm: React.FC<AuctionSpecificsFormProps> = ({
     </CardHeader>
     <CardContent className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="startingBid">Starting Bid Amount (in IDRX)</Label>
+        <Label htmlFor="startingBid">Starting Bid Amount (in ETH)</Label>
         <Input
           id="startingBid"
           type="number"
@@ -541,14 +540,6 @@ export default function AuctionApplicationPage() {
     }
   }, [formData, walletClient, auctionFactoryContract]);
 
-  const timelineEvents = [
-    {
-      status: "submitted" as const,
-      title: "Application Submitted",
-      date: `${submittedDate} at ${new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}`,
-    },
-  ];
-
   const ReviewSubmitStep = () => (
     <Card className="w-full max-w-2xl">
       <CardHeader>
@@ -696,7 +687,6 @@ export default function AuctionApplicationPage() {
               submittedDate={submittedDate}
               lastUpdatedDate={lastUpdatedDate}
             />
-            <ApplicationTimeline events={timelineEvents} />
           </div>
         ) : currentStep === 0 ? (
           <form onSubmit={handleNextToReview} className="w-full max-w-2xl space-y-8">

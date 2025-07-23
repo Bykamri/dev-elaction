@@ -85,7 +85,7 @@ export function ApplicationStatus({ status, submittedDate, lastUpdatedDate }: Ap
         <CardTitle className="text-2xl font-bold text-foreground">{titleText}</CardTitle>
         <p className="text-muted-foreground max-w-md">{descriptionText}</p>
 
-        {status === "in_review" && (
+        {status === "published" && (
           <Alert className="bg-blue-50 border-blue-200 text-blue-800">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertTitle className="text-blue-800">Application Submitted!</AlertTitle>
