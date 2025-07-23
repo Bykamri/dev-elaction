@@ -145,7 +145,7 @@ export function AuctionDetailMain({
                   <p className="text-lg text-muted-foreground">
                     {isFinished ? (auction.highestBid > 0n ? "Harga Akhir" : "Tidak Terjual") : "Tawaran Saat Ini"}
                   </p>
-                  <p className="text-5xl font-bold text-primary">{formatEther(displayBidAmount)} ETH</p>
+                  <p className="text-5xl font-bold text-primary">{formatEther(displayBidAmount)} IDRX</p>
                   <div className="flex items-center text-muted-foreground">
                     <Clock className="w-6 h-6 mr-2" />
                     <span className="text-xl font-semibold">
@@ -161,7 +161,7 @@ export function AuctionDetailMain({
                         <Input
                           id="bid-amount"
                           type="number"
-                          placeholder={`Lebih dari ${formatEther(displayBidAmount)} ETH`}
+                          placeholder={`Lebih dari ${formatEther(displayBidAmount)} IDRX`}
                           value={bidAmount}
                           onChange={e => setBidAmount(e.target.value)}
                           disabled={isActionLoading}
@@ -173,7 +173,7 @@ export function AuctionDetailMain({
                             ) : (
                               <>
                                 <Check className="w-4 h-4 mr-2" />
-                                Approve ETH
+                                Approve IDRX
                               </>
                             )}
                           </Button>
@@ -205,7 +205,7 @@ export function AuctionDetailMain({
                               <User className="w-3 h-3 mr-1" />
                               <span>{bid.bidder.substring(0, 8)}...</span>
                             </div>
-                            <div className="font-semibold text-foreground">{formatEther(bid.amount)} ETH</div>
+                            <div className="font-semibold text-foreground">{formatEther(bid.amount)} IDRX</div>
                           </li>
                         ))}
                       </ul>
@@ -217,7 +217,7 @@ export function AuctionDetailMain({
                   {auction.highestBid > 0n ? (
                     <>
                       <p className="text-lg text-muted-foreground">Tawaran Akhir</p>
-                      <p className="text-5xl font-bold text-primary">{formatEther(auction.highestBid)} ETH</p>
+                      <p className="text-5xl font-bold text-primary">{formatEther(auction.highestBid)} IDRX</p>
                       <div className="flex items-center text-muted-foreground">
                         <User className="w-6 h-6 mr-2" />
                         <span className="text-xl font-semibold">
@@ -277,7 +277,7 @@ export function AuctionDetailMain({
                         </div>
                         <div className="flex items-center font-semibold text-foreground">
                           <DollarSign className="w-4 h-4 mr-1" />
-                          {formatEther(bid.amount)} ETH
+                          {formatEther(bid.amount)} IDRX
                         </div>
                       </li>
                     ))}

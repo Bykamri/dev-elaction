@@ -136,7 +136,7 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
                   ? "Tawaran Tertinggi"
                   : "Harga Awal"}
             </p>
-            <p className="text-2xl font-bold text-primary">{formatEther(displayPrice)} ETH</p>
+            <p className="text-2xl font-bold text-primary">{formatEther(displayPrice)} IDRX</p>
           </div>
           <div className="text-right">
             {!isFinished && (

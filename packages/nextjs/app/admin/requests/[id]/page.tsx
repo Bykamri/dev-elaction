@@ -113,7 +113,7 @@ export default function AuctionRequestDetailPage() {
       return;
     }
     if (!IDRX_TOKEN_ADDRESS) {
-      alert("Alamat token pembayaran (ETH) belum tersedia. Pastikan kontrak sudah ter-deploy dengan benar.");
+      alert("Alamat token pembayaran (IDRX) belum tersedia. Pastikan kontrak sudah ter-deploy dengan benar.");
       return;
     }
 
@@ -269,7 +269,7 @@ export default function AuctionRequestDetailPage() {
                     <strong>Diajukan oleh:</strong> <span className="truncate block">{sellerAddress}</span>
                   </li>
                   <li>
-                    <strong>Tawaran Awal:</strong> {formatEther(startingBid)} ETH
+                    <strong>Tawaran Awal:</strong> {formatEther(startingBid)} IDRX
                   </li>
                 </ul>
               </div>

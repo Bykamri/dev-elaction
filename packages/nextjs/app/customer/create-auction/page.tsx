@@ -139,7 +139,7 @@ const AuctionSpecificsForm: React.FC<AuctionSpecificsFormProps> = ({
     </CardHeader>
     <CardContent className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="startingBid">Starting Bid Amount (in ETH)</Label>
+        <Label htmlFor="startingBid">Starting Bid Amount (in IDRX)</Label>
         <Input
           id="startingBid"
           type="number"
@@ -577,9 +577,7 @@ export default function AuctionApplicationPage() {
           <ul className="list-none pl-0 text-sm text-muted-foreground space-y-1">
             <li>
               <strong>Starting Bid:</strong>{" "}
-              {formData.auctionSpecifics.startingBid
-                ? `$${Number(formData.auctionSpecifics.startingBid).toFixed(2)}`
-                : "N/A"}
+              {formData.auctionSpecifics.startingBid ? `${Number(formData.auctionSpecifics.startingBid)} IDRX` : "N/A"}
             </li>
             <li>
               <strong>Auction Duration:</strong>{" "}
