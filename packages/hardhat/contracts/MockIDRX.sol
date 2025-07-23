@@ -3,8 +3,8 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract MockIDRX is ERC20 {
-    constructor() ERC20("Mock IDRX", "mIDRX") {
-        _mint(msg.sender, 1_000_000_000 * 10 ** decimals());
+contract IDRX is ERC20 {
+    constructor() ERC20("IDRX", "IDRX") {
+        _mint(msg.sender, 1_000_000_000_000 * 10 ** decimals());
     }
 }

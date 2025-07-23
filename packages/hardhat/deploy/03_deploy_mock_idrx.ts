@@ -6,9 +6,9 @@ const deployMockIDRX: DeployFunction = async function (hre: HardhatRuntimeEnviro
   const { deploy } = hre.deployments;
   const { network } = hre;
 
-  if (network.name === "localhost" || network.name === "hardhat") {
-    console.log("🚀 Deploying MockIDRX to localhost...");
-    await deploy("MockIDRX", {
+  if (network.name === "localhost" || network.name === "hardhat" || network.name === "liskSepolia") {
+    console.log(`🚀 Deploying MockIDRX to ${network.name}...`);
+    await deploy("IDRX", {
       from: deployer,
       args: [],
       log: true,
@@ -17,4 +17,4 @@ const deployMockIDRX: DeployFunction = async function (hre: HardhatRuntimeEnviro
 };
 
 export default deployMockIDRX;
-deployMockIDRX.tags = ["MockIDRX"];
+deployMockIDRX.tags = ["IDRX"];
