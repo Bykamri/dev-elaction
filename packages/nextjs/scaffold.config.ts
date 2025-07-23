@@ -7,6 +7,8 @@ export type BaseConfig = {
   alchemyApiKey: string;
   rpcOverrides?: Record<number, string>;
   walletConnectProjectId: string;
+  xellarAppId: string;
+  xellarEnv: "sandbox" | "production";
   onlyLocalBurnerWallet: boolean;
   walletAutoConnect: boolean;
 };
@@ -36,6 +38,12 @@ const scaffoldConfig = {
   // It's recommended to store it in an env variable:
   // .env.local for local testing, and in the Vercel/system env config for live apps.
   walletConnectProjectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "3a8170812b534d0ff9d794f19a901d64",
+  // Xellar App ID - Get your own at https://dashboard.xellar.co/
+  // It's recommended to store it in an env variable:
+  // .env.local for local testing, and in the Vercel/system env config for live apps.
+  xellarAppId: process.env.NEXT_PUBLIC_XELLAR_APP_ID || "demo-app-id-for-testing",
+  // Xellar environment - use "sandbox" for development, "production" for live apps
+  xellarEnv: (process.env.NEXT_PUBLIC_XELLAR_ENV as "sandbox" | "production") || "sandbox",
   onlyLocalBurnerWallet: true,
   walletAutoConnect: true,
 } as const satisfies ScaffoldConfig;

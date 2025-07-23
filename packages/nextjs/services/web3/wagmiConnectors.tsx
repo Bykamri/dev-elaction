@@ -1,43 +1,25 @@
-import { connectorsForWallets } from "@rainbow-me/rainbowkit";
-import {
-  coinbaseWallet,
-  ledgerWallet,
-  metaMaskWallet,
-  rainbowWallet,
-  safeWallet,
-  walletConnectWallet,
-} from "@rainbow-me/rainbowkit/wallets";
-import { rainbowkitBurnerWallet } from "burner-connector";
-import * as chains from "viem/chains";
+import { defaultConfig } from "@xellar/kit";
+import { Chain } from "viem";
+import { mainnet } from "viem/chains";
+import { Config } from "wagmi";
 import scaffoldConfig from "~~/scaffold.config";
 
-const { onlyLocalBurnerWallet, targetNetworks } = scaffoldConfig;
+const { targetNetworks } = scaffoldConfig;
 
-const wallets = [
-  metaMaskWallet,
-  walletConnectWallet,
-  ledgerWallet,
-  coinbaseWallet,
-  rainbowWallet,
-  safeWallet,
-  ...(!targetNetworks.some(network => network.id !== (chains.hardhat as chains.Chain).id) || !onlyLocalBurnerWallet
-    ? [rainbowkitBurnerWallet]
-    : []),
-];
+// We always want to have mainnet enabled (ENS resolution, ETH price, etc). But only once.
+export const enabledChains = targetNetworks.find((network: Chain) => network.id === 1)
+  ? targetNetworks
+  : ([...targetNetworks, mainnet] as const);
 
 /**
- * wagmi connectors for the wagmi context
+ * Xellar Kit configuration with wagmi
  */
-export const wagmiConnectors = connectorsForWallets(
-  [
-    {
-      groupName: "Supported Wallets",
-      wallets,
-    },
-  ],
-
-  {
-    appName: "scaffold-eth-2",
-    projectId: scaffoldConfig.walletConnectProjectId,
-  },
-);
+export const wagmiConnectors = defaultConfig({
+  appName: "scaffold-eth-2",
+  walletConnectProjectId: scaffoldConfig.walletConnectProjectId,
+  // Xellar App ID from scaffold config
+  xellarAppId: scaffoldConfig.xellarAppId,
+  xellarEnv: scaffoldConfig.xellarEnv,
+  ssr: true, // Use this if you're using Next.js App Router
+  chains: enabledChains as any,
+}) as Config;
