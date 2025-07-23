@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { PinataSDK } from "pinata";
 import { v4 as uuidv4 } from "uuid";
-import { pinata } from "~~/utils/pinataConfig";
 
 interface FormData {
   generalInfo: {
@@ -19,6 +19,11 @@ interface FormData {
 
 export async function POST(request: Request) {
   try {
+    const pinata = new PinataSDK({
+      pinataJwt: process.env.NEXT_PUBLIC_PINATA_JWT,
+      pinataGateway: process.env.NEXT_PUBLIC_PINATA_GATEWAY || "gateway.pinata.cloud",
+    });
+
     const body: FormData = await request.json();
     const { generalInfo, assetDetails, imageFiles } = body;
 
