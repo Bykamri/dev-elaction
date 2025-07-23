@@ -52,7 +52,7 @@ export function WelcomeDialog() {
             <ul className="space-y-1 text-muted-foreground">
               <li className="flex items-start">
                 <Check className="h-4 w-4 text-green-500 mr-2 mt-1 flex-shrink-0" />
-                <span>All events, tickets, and transactions shown are mock data</span>
+                <span>All Auctions, assets, and transactions shown are mock data</span>
               </li>
               <li className="flex items-start">
                 <Check className="h-4 w-4 text-green-500 mr-2 mt-1 flex-shrink-0" />
