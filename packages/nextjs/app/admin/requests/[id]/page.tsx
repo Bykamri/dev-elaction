@@ -56,7 +56,7 @@ export default function AuctionRequestDetailPage() {
 
   // Get IDRX contract for localhost
   const { data: idrxContract } = useScaffoldContract({
-    contractName: "MockIDRX",
+    contractName: "IDRX",
   });
 
   // IDRX Token Address - use scaffold contract for localhost, hardcoded for deployment
