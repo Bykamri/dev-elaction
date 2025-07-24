@@ -12,34 +12,14 @@ export const enabledChains = targetNetworks.find((network: Chain) => network.id 
   : ([...targetNetworks, mainnet] as const);
 
 /**
- * Xellar Kit configuration with error handling for production
+ * Xellar Kit configuration with wagmi
  */
-const createXellarConfig = (): Config => {
-  const xellarAppId = process.env.NEXT_PUBLIC_XELLAR_APP_ID;
-  const xellarEnv = process.env.NEXT_PUBLIC_XELLAR_ENV as "sandbox" | "production";
-  const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
-
-  // Validate required environment variables
-  if (!xellarAppId || xellarAppId === "demo-app-id-for-testing") {
-    console.warn("Xellar App ID not configured properly. Using fallback configuration.");
-  }
-
-  try {
-    const config = defaultConfig({
-      appName: "Elaction - Decentralized Auction Platform",
-      walletConnectProjectId: walletConnectProjectId || scaffoldConfig.walletConnectProjectId,
-      xellarAppId: xellarAppId || scaffoldConfig.xellarAppId,
-      xellarEnv: xellarEnv || scaffoldConfig.xellarEnv,
-      ssr: true,
-      chains: enabledChains as any,
-    }) as Config;
-
-    return config;
-  } catch (error) {
-    console.error("Failed to create Xellar config:", error);
-    // Fallback to basic wagmi config if Xellar fails
-    throw error;
-  }
-};
-
-export const wagmiConnectors = createXellarConfig();
+export const wagmiConnectors = defaultConfig({
+  appName: "scaffold-eth-2",
+  walletConnectProjectId: scaffoldConfig.walletConnectProjectId,
+  // Xellar App ID from scaffold config
+  xellarAppId: scaffoldConfig.xellarAppId,
+  xellarEnv: scaffoldConfig.xellarEnv,
+  ssr: true, // Use this if you're using Next.js App Router
+  chains: enabledChains as any,
+}) as Config;
