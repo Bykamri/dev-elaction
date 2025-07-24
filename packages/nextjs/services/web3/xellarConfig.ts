@@ -14,14 +14,18 @@ export const enabledChains = targetNetworks.find((network: Chain) => network.id 
 /**
  * Xellar Kit configuration with error handling for production
  */
-const createXellarConfig = (): Config => {
+export const createXellarConfig = (): Config => {
   const xellarAppId = process.env.NEXT_PUBLIC_XELLAR_APP_ID;
   const xellarEnv = process.env.NEXT_PUBLIC_XELLAR_ENV as "sandbox" | "production";
   const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
 
   // Validate required environment variables
   if (!xellarAppId || xellarAppId === "demo-app-id-for-testing") {
-    console.warn("Xellar App ID not configured properly. Using fallback configuration.");
+    console.warn("Xellar App ID not configured properly. Please set NEXT_PUBLIC_XELLAR_APP_ID");
+  }
+
+  if (!walletConnectProjectId) {
+    console.warn("WalletConnect Project ID not configured. Please set NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID");
   }
 
   try {
@@ -37,7 +41,6 @@ const createXellarConfig = (): Config => {
     return config;
   } catch (error) {
     console.error("Failed to create Xellar config:", error);
-    // Fallback to basic wagmi config if Xellar fails
     throw error;
   }
 };
