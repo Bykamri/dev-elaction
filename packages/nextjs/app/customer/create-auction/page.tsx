@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ImageIcon, UploadCloud, XCircle } from "lucide-react";
 import { parseEther } from "viem";
 import { useWalletClient } from "wagmi";
+import { ConnectWalletGuard } from "~~/components/auth/ConnectWalletGuard";
 import { ApplicationStatus } from "~~/components/customer/request-auction/application-status";
 import { Button } from "~~/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~~/components/ui/card";
@@ -676,7 +677,7 @@ export default function AuctionApplicationPage() {
   );
 
   return (
-    <>
+    <ConnectWalletGuard pageName="Create Auction">
       <main className="flex-1 flex flex-col items-center justify-center bg-gray-100 p-4 md:p-6">
         {applicationSubmitted ? (
           <div className="w-full max-w-2xl space-y-6">
@@ -721,6 +722,6 @@ export default function AuctionApplicationPage() {
         )}
       </main>
       <ImagePreviewDialog />
-    </>
+    </ConnectWalletGuard>
   );
 }

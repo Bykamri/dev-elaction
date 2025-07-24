@@ -5,8 +5,9 @@ import "~~/styles/globals.css";
 import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
 export const metadata = getMetadata({
-  title: "Elaction App",
-  description: "A decentralized auction platform for high value assets",
+  title: "Elaction - Decentralized Auction Platform",
+  description:
+    "A secure blockchain-based auction platform for high-value assets. Participate in transparent auctions with cryptocurrency payments.",
 });
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {

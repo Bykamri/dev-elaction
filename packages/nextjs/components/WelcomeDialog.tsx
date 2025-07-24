@@ -10,7 +10,7 @@ export function WelcomeDialog() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    // Periksa apakah pengguna telah melihat dialog sebelumnya dan kapan terakhir kali
+    // Check if user has viewed the dialog before and when was the last time
     const lastSeenDate = localStorage.getItem("welcomeDialogLastSeen");
     const currentTime = new Date().getTime();
 
@@ -30,7 +30,7 @@ export function WelcomeDialog() {
 
   const handleClose = () => {
     setIsOpen(false);
-    // Simpan timestamp saat ini ke localStorage
+    // Save current timestamp to localStorage
     const currentTime = new Date().getTime().toString();
     localStorage.setItem("welcomeDialogLastSeen", currentTime);
   };

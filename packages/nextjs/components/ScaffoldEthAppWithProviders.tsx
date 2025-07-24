@@ -37,7 +37,7 @@ export const queryClient = new QueryClient({
   },
 });
 
-// Error Boundary untuk Xellar Kit
+// Error Boundary for Xellar Kit
 const XellarKitWrapper = ({ children, theme }: { children: React.ReactNode; theme: any }) => {
   const [hasError, setHasError] = useState(false);
   const [errorDetails, setErrorDetails] = useState<string>("");

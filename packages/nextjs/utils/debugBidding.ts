@@ -1,11 +1,11 @@
 /**
- * Utility untuk debugging masalah bidding pada auction
+ * Utility for debugging bidding issues on auction
  */
 import { formatEther, parseEther } from "viem";
 
 export const debugBidding = {
   /**
-   * Log detail allowance dan bid amount untuk debugging
+   * Log allowance and bid amount details for debugging
    */
   logBiddingDetails: (
     bidAmount: string,

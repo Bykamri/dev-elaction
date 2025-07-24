@@ -69,7 +69,7 @@
   --radius: 0.5rem;
 }
 
-/* --- Variabel untuk Dark Mode (Anda bisa menyesuaikan nilai ini) --- */
+/* --- Dark Mode Variables (You can adjust these values) --- */
 .dark {
   --background: 240 10% 3.9%;
   --foreground: 0 0% 98%;

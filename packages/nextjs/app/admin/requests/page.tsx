@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Info } from "lucide-react";
 import { useAccount, useWalletClient } from "wagmi";
 import { AuctionRequestCard } from "~~/components/admin/auction-request-card";
+import { ConnectWalletGuard } from "~~/components/auth/ConnectWalletGuard";
 import { Alert, AlertDescription, AlertTitle } from "~~/components/ui/alert";
 import { Badge } from "~~/components/ui/badge";
 import { Label } from "~~/components/ui/label";
@@ -47,12 +48,12 @@ export default function AuctionRequestsPage() {
     const fetchData = async () => {
       if (auctionFactoryContract && connectedAddress) {
         try {
-          // 1. Pengecekan peran admin tetap dilakukan
+          // 1. Admin role checking is still performed
           const adminRole = "0x0000000000000000000000000000000000000000000000000000000000000000";
           const hasAdminRole = await auctionFactoryContract.read.hasRole([adminRole, connectedAddress]);
           setIsAdmin(hasAdminRole);
 
-          // 2. Logika pengambilan data proposal sekarang berjalan untuk semua role
+          // 2. Proposal data fetching logic now runs for all roles
           const count = await auctionFactoryContract.read.getProposalsCount();
 
           const proposalsData = [];
@@ -104,29 +105,29 @@ export default function AuctionRequestsPage() {
     setCurrentPage(pageNumber);
   }, []);
 
-  // Render logic untuk dompet tidak terhubung
+  // Render logic for wallet not connected
   if (!isConnected) {
     return (
       <main className="flex-1 container text-center mt-20">
         <Alert variant="destructive">
-          <AlertTitle>Dompet Tidak Terhubung</AlertTitle>
-          <AlertDescription>Harap hubungkan dompet Anda untuk melihat halaman ini.</AlertDescription>
+          <AlertTitle>Wallet Not Connected</AlertTitle>
+          <AlertDescription>Please connect your wallet to view this page.</AlertDescription>
         </Alert>
       </main>
     );
   }
 
-  // Render logic untuk loading
+  // Render logic for loading
   if (isLoading) {
-    return <main className="flex-1 container text-center mt-20">Memuat data proposal...</main>;
+    return <main className="flex-1 container text-center mt-20">Loading proposal data...</main>;
   }
 
-  // --- PERUBAHAN UTAMA ---
-  // Blok 'if (!isAdmin)' yang menampilkan "Akses Ditolak" DIHAPUS dari sini.
-  // Sekarang, semua pengguna yang sudah login bisa langsung melihat konten di bawah.
+  // --- MAIN CHANGES ---
+  // The 'if (!isAdmin)' block that displayed "Access Denied" is REMOVED from here.
+  // Now, all logged-in users can directly view the content below.
 
   return (
-    <>
+    <ConnectWalletGuard pageName="Admin Requests">
       <main className="flex-1 container mx-auto px-4 py-8 md:py-12">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground">
@@ -225,6 +226,6 @@ export default function AuctionRequestsPage() {
           </Pagination>
         )}
       </main>
-    </>
+    </ConnectWalletGuard>
   );
 }

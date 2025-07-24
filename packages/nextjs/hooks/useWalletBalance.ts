@@ -18,7 +18,7 @@ export const useWalletBalance = () => {
   const { data: idrxContract } = useScaffoldContract({ contractName: "IDRX" });
 
   // IDRX token address for different networks
-  const DEPLOYED_IDRX_ADDRESS = "0xD63029C1a3dA68b51c67c6D1DeC3DEe50D681661"; // Lisk Sepolia
+  const DEPLOYED_IDRX_ADDRESS = "0x3BA691f5591aD777Cc4769306d9eA4767a0B6DB5"; // Lisk Sepolia
   const isLocalhost =
     typeof window !== "undefined" &&
     (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
