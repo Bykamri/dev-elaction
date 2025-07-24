@@ -23,7 +23,15 @@ export const erc20Abi = [
     stateMutability: "view",
     type: "function",
   },
-  // --- TAMBAHAN BARU ---
+  {
+    constant: true,
+    inputs: [{ name: "account", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ name: "", type: "uint256" }],
+    payable: false,
+    stateMutability: "view",
+    type: "function",
+  },
   {
     constant: false,
     inputs: [

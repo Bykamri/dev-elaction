@@ -26,6 +26,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "images.unsplash.com",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
         hostname: "preview-responsive-header-design-kzmg27jq27z2q98j8m6v.vusercontent.net",
       },
     ],

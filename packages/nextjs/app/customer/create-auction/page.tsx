@@ -6,7 +6,7 @@ import Image from "next/image";
 import { ImageIcon, UploadCloud, XCircle } from "lucide-react";
 import { parseEther } from "viem";
 import { useWalletClient } from "wagmi";
-import { ApplicationStatus } from "~~/components/request-auction/application-status";
+import { ApplicationStatus } from "~~/components/customer/request-auction/application-status";
 import { Button } from "~~/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~~/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "~~/components/ui/dialog";
