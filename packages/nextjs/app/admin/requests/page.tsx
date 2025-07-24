@@ -105,26 +105,13 @@ export default function AuctionRequestsPage() {
     setCurrentPage(pageNumber);
   }, []);
 
-  // Render logic for wallet not connected
-  if (!isConnected) {
+  if (isLoading) {
     return (
-      <main className="flex-1 container text-center mt-20">
-        <Alert variant="destructive">
-          <AlertTitle>Wallet Not Connected</AlertTitle>
-          <AlertDescription>Please connect your wallet to view this page.</AlertDescription>
-        </Alert>
-      </main>
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-lg text-muted-foreground">Loading auction requests...</p>
+      </div>
     );
   }
-
-  // Render logic for loading
-  if (isLoading) {
-    return <main className="flex-1 container text-center mt-20">Loading proposal data...</main>;
-  }
-
-  // --- MAIN CHANGES ---
-  // The 'if (!isAdmin)' block that displayed "Access Denied" is REMOVED from here.
-  // Now, all logged-in users can directly view the content below.
 
   return (
     <ConnectWalletGuard pageName="Admin Requests">
