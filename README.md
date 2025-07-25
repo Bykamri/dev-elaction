@@ -1,4 +1,4 @@
-# �️ Dev-Elaction - Decentralized Real Estate Auction Platform
+# Elaction - Decentralized Real Estate Auction Platform
 
 <h4 align="center">
   <a href="#features">Features</a> |
