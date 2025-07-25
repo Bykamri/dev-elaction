@@ -11,52 +11,115 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~~/co
 import { CategoryBadge } from "~~/utils/CategoryBadge";
 import { shortenAddress } from "~~/utils/addressFormat";
 
-// Enum untuk status proposal, digunakan untuk kejelasan kode
+/**
+ * @fileoverview Auction Card Component
+ *
+ * This component displays individual auction cards in the main auction marketplace.
+ * It shows active and completed auctions with their asset information, current bidding
+ * status, time remaining, and provides navigation to detailed auction pages.
+ * The component handles real-time countdown timers for live auctions and displays
+ * appropriate status indicators and pricing information based on auction state.
+ *
+ * @author Dev Team
+ * @version 1.0.0
+ */
+
+/**
+ * Enumeration of possible auction proposal statuses
+ * @enum {number}
+ */
 enum ProposalStatus {
+  /** Proposal is waiting for admin review */
   Pending,
+  /** Proposal has been rejected by admin */
   Rejected,
+  /** Auction is currently live and accepting bids */
   Live,
+  /** Auction has ended */
   Finished,
 }
 
-// Tipe untuk props, hanya menerima satu objek 'auction' dari halaman induk
+/**
+ * Type definition for auction card properties
+ * @typedef {Object} AuctionCardProps
+ */
 type AuctionCardProps = {
+  /** Auction object containing all auction-related data */
   auction: {
+    /** Unique identifier for the auction proposal */
     proposalId: bigint;
+    /** Wallet address of the auction proposer/seller */
     proposer: string;
+    /** Name/title of the asset being auctioned */
     assetName: string;
+    /** URL of the asset image for display */
     imageUrl: string;
+    /** Category classification of the asset */
     category: string;
+    /** Initial bid amount set by the seller */
     startingBid: bigint;
+    /** Current highest bid amount */
     highestBid: bigint;
+    /** Current status of the auction */
     status: ProposalStatus;
+    /** Smart contract address of the auction */
     auctionAddress: string;
+    /** Unix timestamp when the auction ends */
     endTime: bigint;
   };
 };
 
+/**
+ * AuctionCard Component
+ *
+ * Renders an individual auction card with comprehensive auction information
+ * including asset details, current bidding status, time remaining for live
+ * auctions, and navigation controls. The component provides real-time updates
+ * for active auctions and displays appropriate visual indicators for different
+ * auction states.
+ *
+ * Features:
+ * - Real-time countdown timer for live auctions
+ * - Status-based visual indicators (Live, Finished)
+ * - Dynamic pricing display (starting bid vs highest bid)
+ * - Asset image with fallback handling
+ * - Category and seller information
+ * - Responsive card layout with hover effects
+ * - Conditional action buttons based on auction status
+ * - Automatic navigation to detailed auction view
+ *
+ * @component
+ * @param {AuctionCardProps} props - Component props containing auction data
+ * @returns {JSX.Element} The rendered auction card
+ */
 export const AuctionCard = ({ auction }: AuctionCardProps) => {
-  // State hanya untuk timer, karena ini adalah satu-satunya hal yang berubah di sisi klien
+  // State for tracking real-time countdown
   const [timeLeft, setTimeLeft] = useState("");
+
+  // Check if auction has finished
   const isFinished = auction.status === ProposalStatus.Finished;
 
-  // useEffect HANYA untuk timer, bukan untuk mengambil data
+  // Effect hook for managing real-time countdown timer
   useEffect(() => {
+    // Skip timer setup for finished or non-live auctions
     if (isFinished || auction.status !== ProposalStatus.Live) {
       if (isFinished) setTimeLeft("Lelang Selesai");
       return;
     }
 
+    // Set up interval for countdown timer updates
     const interval = setInterval(() => {
       const now = Math.floor(Date.now() / 1000);
       const remaining = Number(auction.endTime) - now;
 
+      // Check if auction has ended
       if (remaining <= 0) {
         setTimeLeft("Lelang Selesai");
         clearInterval(interval);
         return;
       }
 
+      // Calculate and format remaining time (days, hours, minutes, seconds)
       const d = Math.floor(remaining / 86400);
       const h = Math.floor((remaining % 86400) / 3600);
       const m = Math.floor((remaining % 3600) / 60);
@@ -64,22 +127,31 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
       setTimeLeft(`${d}h ${h}j ${m}m ${s}d`);
     }, 1000);
 
+    // Cleanup interval on component unmount
     return () => clearInterval(interval);
   }, [auction.endTime, auction.status, isFinished]);
 
-  // Logic harga yang ditampilkan berdasarkan kondisi auction
+  /**
+   * Determines the appropriate price to display
+   * Shows highest bid if available, otherwise shows starting bid
+   * @returns {bigint} The price to display in the card
+   */
   const getDisplayPrice = () => {
-    // Jika ada yang sudah bid (highestBid > 0), tampilkan highestBid
     if (auction.highestBid > 0n) {
       return auction.highestBid;
     }
-    // Jika belum ada yang bid, tampilkan startingBid
     return auction.startingBid;
   };
 
+  // Get the price to display and create navigation link
   const displayPrice = getDisplayPrice();
   const linkToDetails = `/auctions/${auction.auctionAddress}`;
 
+  /**
+   * Generates appropriate status badge based on auction status
+   * Returns different badges with colors and icons for Live and Finished states
+   * @returns {JSX.Element | null} Status badge component or null
+   */
   const getStatusBadge = () => {
     if (auction.status === ProposalStatus.Live) {
       return (
@@ -99,7 +171,9 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
   };
 
   return (
+    // Main card container with hover effects and flexible layout
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col">
+      {/* Clickable image section with navigation to auction details */}
       <Link href={linkToDetails} passHref>
         <div className="relative">
           <Image
@@ -109,12 +183,16 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
             height={300}
             className="w-full h-48 object-cover"
           />
+          {/* Status badge overlay (top-left) */}
           {getStatusBadge()}
+          {/* Category badge overlay (top-right) */}
           <div className="absolute top-3 right-3">
             <CategoryBadge category={auction.category} />
           </div>
         </div>
       </Link>
+
+      {/* Card header with asset name and seller information */}
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold text-foreground truncate" title={auction.assetName}>
           {auction.assetName}
@@ -124,8 +202,11 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
           <span>Oleh: {shortenAddress(auction.proposer)}</span>
         </CardDescription>
       </CardHeader>
+
+      {/* Card content with pricing and time information */}
       <CardContent className="pt-0 flex-grow">
         <div className="flex justify-between items-center">
+          {/* Price information section */}
           <div>
             <p className="text-sm text-muted-foreground">
               {isFinished
@@ -138,6 +219,8 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
             </p>
             <p className="text-2xl font-bold text-primary">{formatEther(displayPrice)} IDRX</p>
           </div>
+
+          {/* Time remaining section (only for active auctions) */}
           <div className="text-right">
             {!isFinished && (
               <>
@@ -151,6 +234,8 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
           </div>
         </div>
       </CardContent>
+
+      {/* Action button section */}
       <div className="p-4 pt-0 mt-auto">
         <Button asChild className="w-full" disabled={isFinished}>
           <Link href={linkToDetails}>

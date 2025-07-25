@@ -1,98 +1,374 @@
-# 🏗 Scaffold-ETH 2
+# �️ Dev-Elaction - Decentralized Real Estate Auction Platform
 
 <h4 align="center">
-  <a href="https://docs.scaffoldeth.io">Documentation</a> |
-  <a href="https://scaffoldeth.io">Website</a>
+  <a href="#features">Features</a> |
+  <a href="#quick-start">Quick Start</a> |
+  <a href="#architecture">Architecture</a> |
+  <a href="#api-documentation">API</a>
 </h4>
 
-🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
+🏗️ A comprehensive decentralized auction platform for real estate assets built on Ethereum blockchain. This platform enables secure, transparent, and efficient real estate auctions with integrated review systems, role-based access control, and comprehensive asset management.
 
-⚙️ Built using NextJS, RainbowKit, Hardhat, Wagmi, Viem, and Typescript.
+⚙️ Built using NextJS, XellarKit, Hardhat, Wagmi, Viem, TypeScript, Shadcn/ui and Tailwind CSS.
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
+## 🌟 Key Features
 
-![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
+- 🏠 **Real Estate Asset Auctions**: Complete auction lifecycle management for real estate properties
+- 👥 **Role-Based Access Control**: Admin, Reviewer, and User roles with specific permissions
+- 📋 **Proposal Review System**: Administrative review process before assets go to auction
+- 💰 **IDRX Token Integration**: Custom ERC-20 token for bidding and transactions
+- 🔄 **Real-Time Bidding**: Live auction updates with automatic countdown timers
+- 📊 **Comprehensive Analytics**: User portfolios, auction statistics, and financial tracking
+- �️ **IPFS Asset Storage**: Decentralized storage for asset metadata and images
+- � **Responsive Design**: Mobile-first design with modern UI/UX
+- 🔐 **Wallet Integration**: Support for multiple wallet providers
+- ⚡ **Real-Time Updates**: Live auction state synchronization
 
-## Requirements
+![Dev-Elaction Platform](./packages/nextjs/components/assets/thumbnail.png)
+
+## 📋 Requirements
 
 Before you begin, you need to install the following tools:
 
-- [Node (>= v20.18.3)](https://nodejs.org/en/download/)
-- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
+- [Node.js (>= v20.18.3)](https://nodejs.org/en/download/)
+- [Yarn (v1 or v2+)](https://classic.yarnpkg.com/en/docs/install/)
 - [Git](https://git-scm.com/downloads)
+- [MetaMask](https://metamask.io/) or other Web3 wallet
 
-## Quickstart
+## 🚀 Quick Start
 
-To get started with Scaffold-ETH 2, follow the steps below:
+To get started with Dev-Elaction, follow these steps:
 
-1. Install dependencies if it was skipped in CLI:
+### 1. Clone and Install Dependencies
 
-```
-cd my-dapp-example
+```bash
+git clone https://github.com/Bykamri/dev-elaction.git
+cd dev-elaction
 yarn install
 ```
 
-2. Run a local network in the first terminal:
+### 2. Start Local Blockchain Network
 
-```
+```bash
 yarn chain
 ```
 
-This command starts a local Ethereum network using Hardhat. The network runs on your local machine and can be used for testing and development. You can customize the network configuration in `packages/hardhat/hardhat.config.ts`.
+This starts a local Ethereum network using Hardhat for development and testing.
 
-3. On a second terminal, deploy the test contract:
+### 3. Deploy Smart Contracts
 
-```
+```bash
 yarn deploy
 ```
 
-This command deploys a test smart contract to the local network. The contract is located in `packages/hardhat/contracts` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/hardhat/deploy` to deploy the contract to the network. You can also customize the deploy script.
+This deploys the following contracts:
+- **RwaNft**: ERC-721 contract for real estate asset tokens
+- **AuctionFactory**: Factory contract for creating and managing auctions
+- **MockIDRX**: ERC-20 token contract for bidding (IDRX tokens)
 
-4. On a third terminal, start your NextJS app:
+### 4. Start the Frontend Application
 
-```
+```bash
 yarn start
 ```
 
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
+Visit your application at: `http://localhost:3000`
 
-Run smart contract test with `yarn hardhat:test`
+### 5. Configure Your Wallet
 
-- Edit your smart contracts in `packages/hardhat/contracts`
-- Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
-- Edit your deployment scripts in `packages/hardhat/deploy`
+- Add the local network to your wallet (Chain ID: 31337)
+- Import one of the test accounts from Hardhat
+- You're ready to start testing the auction platform!
 
-## 🚀 Setup ERC-20 Token Extension
+## 🏗️ Architecture
 
-This extension introduces an ERC-20 token contract and demonstrates how to use interact with it, including getting a holder balance and transferring tokens.
+### Smart Contracts
 
-The ERC-20 Token Standard introduces a standard for Fungible Tokens ([EIP-20](https://eips.ethereum.org/EIPS/eip-20)), in other words, each Token is exactly the same (in type and value) as any other Token.
+#### Core Contracts
 
-The ERC-20 token contract is implemented using the [ERC-20 token implementation](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol) from OpenZeppelin.
+1. **AuctionFactory.sol**
+   - Creates and manages individual auction contracts
+   - Handles proposal submissions and review workflow
+   - Manages role-based access control (Admin, Reviewer roles)
+   - Tracks all proposals and their states
 
-### Setup
+2. **Auction.sol**
+   - Individual auction contract for each asset
+   - Handles bidding logic and auction lifecycle
+   - Manages bid history and winner determination
+   - Integrates with IDRX token for payments
 
-Deploy your contract running ```yarn deploy```
+3. **RwaNft.sol**
+   - ERC-721 contract for real estate asset tokens
+   - Stores asset metadata and ownership
+   - Integrates with IPFS for decentralized storage
 
-### Interact with the token
+4. **MockIDRX.sol**
+   - ERC-20 token contract for platform currency
+   - Used for bidding and auction payments
+   - Includes minting functionality for testing
 
-Start the front-end with ```yarn start``` and go to the _/erc20_ page to interact with your deployed ERC-20 token.
+### Frontend Architecture
 
-You can check the code at ```packages/nextjs/app/erc20/page.tsx```.
+#### Tech Stack
+- **Framework**: Next.js 14 with App Router
+- **Blockchain Integration**: Wagmi + Viem
+- **Wallet Connection**: XellarKit
+- **UI Framework**: Tailwind CSS + shadcn/ui
+- **State Management**: React Hooks + Context API
+- **File Storage**: IPFS via Pinata
+
+#### Key Components
+
+1. **Custom Hooks** (`packages/nextjs/hooks/`)
+   - `useAuctionDetails`: Complete auction management with real-time bidding
+   - `useWalletBalance`: ETH and IDRX balance tracking
+   - `useAdminRole`: Role-based access control
+   - `useAssetsData`: User portfolio and auction history
+   - `useUserProfile`: Comprehensive user statistics
+   - `useProposalData`: Proposal data and metadata management
+
+2. **UI Components** (`packages/nextjs/components/`)
+   - **Admin Panel**: Role management and proposal review
+   - **Customer Interface**: Auction browsing and bidding
+   - **Auth Guards**: Wallet connection and role verification
+   - **Asset Cards**: Property display with comprehensive information
+   - **Transaction Management**: Bid placement and approval handling
+
+3. **Page Structure**
+   - `/` - Homepage with featured auctions
+   - `/auctions` - Browse all active auctions
+   - `/auctions/[id]` - Individual auction details and bidding
+   - `/admin` - Administrative dashboard
+   - `/customer` - User dashboard and profile
+   - `/api` - Backend API endpoints
+
+## 🎯 User Roles & Permissions
+
+### 👤 Regular Users
+- Browse and search auctions
+- Place bids on active auctions
+- View bid history and auction details
+- Manage personal profile and transaction history
+- Submit new asset proposals for review
+
+### 👨‍💼 Reviewers
+- Review submitted asset proposals
+- Approve or reject proposals with comments
+- Access reviewer dashboard
+- View proposal details and metadata
+
+### 👨‍💻 Administrators
+- Full platform management access
+- User role assignment and management
+- System configuration and monitoring
+- Access to all platform statistics
+- Emergency controls and maintenance
+
+## 🔄 Auction Workflow
+
+### 1. Asset Proposal Submission
+```mermaid
+graph LR
+    A[User Submits Proposal] --> B[Upload to IPFS]
+    B --> C[Create Proposal on Contract]
+    C --> D[Pending Review Status]
+```
+
+### 2. Review Process
+```mermaid
+graph LR
+    A[Reviewer Accesses Proposal] --> B[Review Asset Details]
+    B --> C{Decision}
+    C -->|Approve| D[Create Auction Contract]
+    C -->|Reject| E[Set Rejection Reason]
+    D --> F[Auction Goes Live]
+```
+
+### 3. Auction Lifecycle
+```mermaid
+graph LR
+    A[Auction Starts] --> B[Users Place Bids]
+    B --> C[Real-time Updates]
+    C --> D[Auction Timer Expires]
+    D --> E[Winner Determined]
+    E --> F[Asset Transfer]
+```
+
+## 🛠️ Development
+
+### Project Structure
+
+```
+dev-elaction/
+├── packages/
+│   ├── hardhat/           # Smart contracts and deployment
+│   │   ├── contracts/     # Solidity contracts
+│   │   ├── deploy/        # Deployment scripts
+│   │   └── test/          # Contract tests
+│   └── nextjs/            # Frontend application
+│       ├── app/           # Next.js app router pages
+│       ├── components/    # React components
+│       ├── hooks/         # Custom React hooks
+│       ├── lib/           # Utility functions
+│       └── types/         # TypeScript type definitions
+```
+
+### Available Scripts
+
+```bash
+# Development
+yarn chain          # Start local blockchain
+yarn deploy         # Deploy contracts
+yarn start          # Start frontend
+yarn dev            # Start in development mode
+
+# Testing
+yarn test           # Run all tests
+yarn hardhat:test   # Run contract tests
+yarn lint           # Run ESLint
+yarn type-check     # TypeScript type checking
+
+# Production
+yarn build          # Build for production
+yarn preview        # Preview production build
+```
+
+### Environment Configuration
+
+Create a `.env.local` file in `packages/nextjs/`:
+
+```env
+NEXT_PUBLIC_PINATA_GATEWAY=https://gateway.pinata.cloud
+PINATA_API_KEY=your_pinata_api_key
+PINATA_SECRET_API_KEY=your_pinata_secret
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_wallet_connect_id
+```
 
 
-## Documentation
 
-Visit our [docs](https://docs.scaffoldeth.io) to learn how to start building with Scaffold-ETH 2.
+## 🚀 Deployment
 
-To know more about its features, check out our [website](https://scaffoldeth.io).
+### Local Development
+Already covered in Quick Start section.
 
-## Contributing to Scaffold-ETH 2
+### Testnet Deployment
 
-We welcome contributions to Scaffold-ETH 2!
+1. **Configure Network**
+   Update `packages/hardhat/hardhat.config.ts` with testnet configuration:
 
-Please see [CONTRIBUTING.MD](https://github.com/scaffold-eth/scaffold-eth-2/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-ETH 2.
+```typescript
+networks: {
+  liskSepolia: {
+    url: "https://rpc.sepolia-api.lisk.com",
+    accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+  }
+}
+```
+
+2. **Deploy Contracts**
+```bash
+yarn deploy --network localhost
+```
+
+3. **Update Frontend Configuration**
+   Update contract addresses in `packages/nextjs/contracts/deployedContracts.ts`
+
+### Production Deployment
+
+1. **Frontend Deployment** (Vercel recommended)
+```bash
+yarn build
+# Deploy to your preferred platform
+```
+
+2. **Configure Environment Variables**
+   Set all required environment variables in your deployment platform.
+
+## 📚 API Documentation
+
+### Smart Contract Events
+
+#### AuctionFactory Events
+- `ProposalSubmitted(uint256 proposalId, address proposer)`
+- `ProposalReviewed(uint256 proposalId, bool approved)`
+- `AuctionCreated(uint256 proposalId, address auctionContract)`
+
+#### Auction Events
+- `Bid(address bidder, uint256 amount)`
+- `AuctionEnded(address winner, uint256 winningBid)`
+
+### Custom Hooks API
+
+#### useAuctionDetails(auctionAddress)
+```typescript
+const {
+  auction,           // Complete auction data
+  allowance,         // Token allowance
+  isLoading,         // Loading state
+  timeLeft,          // Countdown timer
+  isFinished,        // Auction status
+  handleApprove,     // Approve tokens
+  handleBid          // Place bid
+} = useAuctionDetails(auctionAddress);
+```
+
+#### useWalletBalance()
+```typescript
+const {
+  ethBalance,        // ETH balance
+  idrxBalance,       // IDRX balance
+  isLoading,         // Loading state
+  error,             // Error state
+  refreshBalances    // Manual refresh
+} = useWalletBalance();
+```
+
+## 🔐 Security Considerations
+
+### Smart Contract Security
+- **Access Control**: Role-based permissions using OpenZeppelin
+- **Reentrancy Protection**: ReentrancyGuard implementation
+- **Integer Overflow**: SafeMath operations
+- **Input Validation**: Comprehensive parameter checking
+
+### Frontend Security
+- **Wallet Integration**: Secure wallet connection handling
+- **Transaction Simulation**: Pre-execution validation
+- **Error Handling**: Graceful failure management
+- **Data Validation**: Input sanitization and validation
+
+## 🤝 Contributing
+
+We welcome contributions to Dev-Elaction! Please follow these steps:
+
+1. **Fork the Repository**
+2. **Create a Feature Branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Make Your Changes**
+   - Follow the existing code style
+   - Add tests for new functionality
+   - Update documentation as needed
+4. **Submit a Pull Request**
+
+### Development Guidelines
+
+- **Code Style**: Follow ESLint and Prettier configurations
+- **Commit Messages**: Use conventional commit format
+- **Testing**: Ensure all tests pass before submitting
+- **Documentation**: Update relevant documentation
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built on [Scaffold-ETH 2](https://scaffoldeth.io)
+- Powered by [OpenZeppelin](https://openzeppelin.com) contracts
+- UI components from [shadcn/ui](https://ui.shadcn.com)
+- Decentralized storage via [IPFS](https://ipfs.io)
+
+

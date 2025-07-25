@@ -2,54 +2,74 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { Contract } from "ethers";
 
+/**
+ * @title Auction Factory Deployment Script
+ * @dev Deployment script for the AuctionFactory contract with automatic permission setup
+ * @notice This script deploys the AuctionFactory and configures it to work with the RwaNft contract
+ * @notice Automatically grants MINTER_ROLE to the factory for NFT creation during auction approval
+ */
+
+/**
+ * @dev Main deployment function for the AuctionFactory contract
+ * @param hre Hardhat Runtime Environment containing deployment utilities and network information
+ * @returns Promise that resolves when deployment and setup is complete
+ * @notice This function will:
+ *   1. Deploy the AuctionFactory contract with RwaNft address as constructor argument
+ *   2. Grant MINTER_ROLE to the factory contract on the RwaNft contract
+ *   3. Verify the permission was granted successfully
+ *   4. Log deployment status and addresses
+ */
 const deployAuctionFactory: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  // Extract deployer account and deployment utilities
   const { deployer } = await hre.getNamedAccounts();
   const { deploy, get } = hre.deployments;
 
-  // 1. Dapatkan objek Signer dari alamat deployer
+  // Get signer for transaction execution
   const deployerSigner = await hre.ethers.getSigner(deployer);
 
-  // 2. Dapatkan kontrak RwaNft dan hubungkan dengan Signer
+  // Get the previously deployed RwaNft contract
   const rwaNftDeployment = await get("RwaNft");
-  // Gunakan getContractAt dengan Signer, bukan string
   const rwaNft = await hre.ethers.getContractAt("RwaNft", rwaNftDeployment.address, deployerSigner);
-  console.log(`--- Menggunakan RwaNft di alamat: ${await rwaNft.getAddress()}`);
+  console.log(`RwaNft contract found at: ${await rwaNft.getAddress()}`);
 
-  // 3. Deploy AuctionFactory
+  // Deploy AuctionFactory with RwaNft address as constructor argument
   await deploy("AuctionFactory", {
     from: deployer,
-    args: [rwaNftDeployment.address],
+    args: [rwaNftDeployment.address], // Pass RwaNft address to constructor
     log: true,
   });
+
+  // Get deployed AuctionFactory contract instance
   const auctionFactory = await hre.ethers.getContract<Contract>("AuctionFactory", deployer);
   const auctionFactoryAddress = await auctionFactory.getAddress();
-  console.log(`--- AuctionFactory di-deploy di alamat: ${auctionFactoryAddress}`);
+  console.log(`AuctionFactory deployed at: ${auctionFactoryAddress}`);
 
-  // --- BAGIAN PENTING: PEMBERIAN & VERIFIKASI IZIN ---
+  // Get MINTER_ROLE identifier from RwaNft contract
   const minterRole = await rwaNft.MINTER_ROLE();
 
-  console.log("Memverifikasi izin SEBELUM...");
+  // Check if AuctionFactory already has MINTER_ROLE
   let hasPermission = await rwaNft.hasRole(minterRole, auctionFactoryAddress);
-  console.log(`--> Apakah AuctionFactory sudah punya MINTER_ROLE?: ${hasPermission}`);
+  console.log(`AuctionFactory MINTER_ROLE status: ${hasPermission ? "✅ Already granted" : "❌ Not granted"}`);
 
+  // Grant MINTER_ROLE if not already granted
   if (!hasPermission) {
-    console.log("Izin belum ada. Memberikan MINTER_ROLE sekarang...");
+    console.log("Granting MINTER_ROLE to AuctionFactory...");
     const grantRoleTx = await rwaNft.grantRole(minterRole, auctionFactoryAddress);
     await grantRoleTx.wait();
-    console.log("✅ Transaksi grantRole berhasil dikirim.");
+
+    // Verify the role was granted successfully
+    hasPermission = await rwaNft.hasRole(minterRole, auctionFactoryAddress);
+    if (!hasPermission) {
+      throw new Error("Failed to grant MINTER_ROLE to AuctionFactory");
+    }
+    console.log("✅ MINTER_ROLE granted successfully");
   }
 
-  console.log("Memverifikasi izin SESUDAH...");
-  hasPermission = await rwaNft.hasRole(minterRole, auctionFactoryAddress);
-  console.log(`--> Apakah AuctionFactory sekarang punya MINTER_ROLE?: ${hasPermission}`);
-
-  if (!hasPermission) {
-    throw new Error("GAGAL memberikan MINTER_ROLE setelah transaksi!");
-  }
-
-  console.log("✅ Setup Izin Selesai.");
+  console.log("✅ AuctionFactory deployment and setup completed");
 };
 
 export default deployAuctionFactory;
-deployAuctionFactory.tags = ["AuctionFactory"];
-deployAuctionFactory.dependencies = ["RwaNft"];
+
+// Deployment configuration
+deployAuctionFactory.tags = ["AuctionFactory"]; // Tag for selective deployment
+deployAuctionFactory.dependencies = ["RwaNft"]; // Requires RwaNft to be deployed first

@@ -9,45 +9,113 @@ import { SidebarProvider } from "~~/components/ui/sidebar";
 import { useAuctions } from "~~/hooks/useAuction";
 import { categoryConfig } from "~~/lib/categoryConfig";
 
-// 1. Impor hook utama
-
+/**
+ * @title Auctions Listing Page Component
+ * @dev Main page component for displaying and filtering available auctions
+ * @notice This page provides:
+ *   - Grid view of all available auctions with filtering capabilities
+ *   - Real-time status filtering (all, open, closed auctions)
+ *   - Category-based filtering by asset type
+ *   - Price range filtering with min/max price inputs
+ *   - Responsive design with mobile sidebar and desktop filter bar
+ *   - Search and discovery interface for auction participants
+ * @notice Accessible via route: /auctions for browsing all available auctions
+ */
 const AuctionsPage = () => {
-  // 2. Panggil hook useAuctions untuk mendapatkan semua data lelang
+  // ============ Data Fetching ============
+
+  /**
+   * @dev Fetch all available auctions from the blockchain
+   * @notice Uses custom hook to retrieve auction data and loading state
+   * @notice Returns array of auctions with metadata, status, and pricing information
+   */
   const { auctions: allAuctions, isLoading } = useAuctions();
 
-  // State untuk filter tetap ada di sini untuk mengontrol UI
+  // ============ Filter State Management ============
+
+  /**
+   * @dev State for filtering auctions by their current status
+   * @notice Options: "all" (show all), "open" (active auctions), "closed" (finished auctions)
+   */
   const [filterStatus, setFilterStatus] = useState<"all" | "open" | "closed">("all");
+
+  /**
+   * @dev State for filtering auctions by asset category
+   * @notice Uses category keys from categoryConfig (e.g., "Comics", "Watches", "Books")
+   * @notice "all" shows auctions from all categories
+   */
   const [filterCategory, setFilterCategory] = useState("all");
+
+  /**
+   * @dev State for minimum price filter
+   * @notice String value for price input, converted to number during filtering
+   */
   const [minPrice, setMinPrice] = useState("");
+
+  /**
+   * @dev State for maximum price filter
+   * @notice String value for price input, converted to number during filtering
+   */
   const [maxPrice, setMaxPrice] = useState("");
 
-  // Mengambil daftar kategori statis dari file konfigurasi
+  // ============ Category Management ============
+
+  /**
+   * @dev Generates unique categories for filter dropdown
+   * @notice Memoized to prevent unnecessary recalculation
+   * @returns Array of category strings including "all" option
+   *
+   * Process:
+   * 1. Extract all category keys from categoryConfig
+   * 2. Filter out "Default" category (internal use only)
+   * 3. Prepend "all" option for showing all categories
+   */
   const uniqueCategories = useMemo(() => {
     const allCategoryKeys = Object.keys(categoryConfig);
     const categories = allCategoryKeys.filter(key => key !== "Default");
     return ["all", ...categories];
   }, []);
 
-  // Logika untuk memfilter lelang berdasarkan state filter
+  // ============ Auction Filtering Logic ============
+
+  /**
+   * @dev Filters auctions based on user-selected criteria
+   * @notice Memoized to optimize performance during filter changes
+   * @returns Array of filtered auction objects
+   *
+   * Filtering Process:
+   * 1. Status Filter: Check auction status (Live=2, Finished=3)
+   * 2. Category Filter: Match auction category with selected filter
+   * 3. Price Range Filter: Compare current bid/starting bid with price range
+   *
+   * Price Logic:
+   * - Uses highestBid if available, otherwise falls back to startingBid
+   * - Converts from Wei to Ether for human-readable comparison
+   */
   const filteredAuctions = useMemo(() => {
     return allAuctions.filter(auction => {
-      // Filter berdasarkan status
+      // Status Filter: Check if auction matches selected status
       if (filterStatus === "open" && auction.status !== 2 /* Live */) return false;
       if (filterStatus === "closed" && auction.status !== 3 /* Finished */) return false;
 
-      // Filter berdasarkan kategori
+      // Category Filter: Check if auction category matches selected filter
       if (filterCategory !== "all" && auction.category !== filterCategory) return false;
 
-      // Filter berdasarkan harga
+      // Price Range Filter: Convert price from Wei to Ether and apply constraints
       const price = parseFloat(formatEther(auction.highestBid > 0n ? auction.highestBid : auction.startingBid));
       if (minPrice && price < Number(minPrice)) return false;
       if (maxPrice && price > Number(maxPrice)) return false;
 
-      return true;
+      return true; // Auction passes all filter criteria
     });
   }, [allAuctions, filterStatus, filterCategory, minPrice, maxPrice]);
 
-  // Fungsi untuk mereset semua filter
+  // ============ Filter Management Functions ============
+
+  /**
+   * @dev Resets all filter states to their default values
+   * @notice Clears status, category, and price range filters
+   */
   const onResetFilters = () => {
     setFilterStatus("all");
     setFilterCategory("all");
@@ -55,9 +123,12 @@ const AuctionsPage = () => {
     setMaxPrice("");
   };
 
+  // ============ Component Render ============
+
   return (
     <SidebarProvider>
       <div className="container mx-auto px-4 md:px-6 py-8">
+        {/* Page Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight">Daftar Lelang</h1>
           <p className="text-lg text-base-content/70 mt-2">
@@ -65,7 +136,9 @@ const AuctionsPage = () => {
           </p>
         </div>
 
+        {/* Main Content Layout */}
         <div className="flex flex-col md:flex-row gap-8">
+          {/* Mobile Filter Sidebar */}
           <AuctionFiltersSidebar
             filterStatus={filterStatus}
             setFilterStatus={setFilterStatus}
@@ -78,6 +151,8 @@ const AuctionsPage = () => {
             onResetFilters={onResetFilters}
             uniqueCategories={uniqueCategories}
           />
+
+          {/* Desktop Filter Panel */}
           <DesktopFilters
             filterStatus={filterStatus}
             setFilterStatus={setFilterStatus}
@@ -91,14 +166,15 @@ const AuctionsPage = () => {
             uniqueCategories={uniqueCategories}
           />
 
+          {/* Auction Display Area */}
           <div className="flex-1">
-            {/* 3. Gunakan isLoading dari hook untuk menampilkan status memuat */}
             {isLoading ? (
+              // Loading State: Show spinner while fetching auction data
               <div className="flex justify-center items-center h-96">
                 <span className="loading loading-spinner loading-lg"></span>
               </div>
             ) : (
-              // 4. Kirim data yang sudah difilter ke komponen grid
+              // Auction Grid: Display filtered auctions in responsive grid layout
               <AuctionListGrid auctions={filteredAuctions} />
             )}
           </div>
@@ -108,4 +184,8 @@ const AuctionsPage = () => {
   );
 };
 
+/**
+ * @dev Default export for the auction listing page
+ * @notice Main page component for browsing and filtering auctions
+ */
 export default AuctionsPage;

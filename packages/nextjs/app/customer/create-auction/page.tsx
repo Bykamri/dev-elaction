@@ -18,35 +18,72 @@ import { Textarea } from "~~/components/ui/textarea";
 import { useScaffoldContract } from "~~/hooks/scaffold-eth";
 import { assetCategories, dynamicAssetFields } from "~~/lib/asset-configs";
 
+/**
+ * @title Auction Application Creation Page
+ * @dev Complete auction proposal submission interface for users
+ * @notice This page provides:
+ *   - Multi-step form for auction proposal submission
+ *   - Dynamic asset fields based on selected category
+ *   - Image upload with format validation and preview
+ *   - IPFS metadata generation and blockchain submission
+ *   - Real-time status tracking and error handling
+ * @notice Users can create auction proposals that require admin approval before going live
+ */
+
+// ============ Type Definitions ============
+
+/**
+ * @dev Form data structure for auction proposal submission
+ * @notice Contains all required information for creating an auction proposal
+ */
 interface FormData {
   generalInfo: {
-    assetName: string;
-    assetType: string;
-    description: string;
-    shortDescription: string;
-    userAddress: string;
+    assetName: string; // Name of the asset being auctioned
+    assetType: string; // Category type from asset-configs
+    description: string; // Detailed asset description
+    shortDescription: string; // Brief summary (max 100 words)
+    userAddress: string; // Wallet address of the proposer
   };
   auctionSpecifics: {
-    startingBid: string;
-    durationValue: number;
-    durationUnit: "days" | "hours" | "minutes";
+    startingBid: string; // Minimum bid amount in IDRX
+    durationValue: number; // Auction duration numeric value
+    durationUnit: "days" | "hours" | "minutes"; // Duration time unit
   };
-  assetDetails: Record<string, any>;
+  assetDetails: Record<string, any>; // Dynamic fields based on asset category
   imageFiles: {
-    fileName: string;
-    dataUrl: string;
-    fileType: string;
+    fileName: string; // Original filename from upload
+    dataUrl: string; // Base64 encoded image data
+    fileType: string; // MIME type of the image
   }[];
 }
 
+/**
+ * @dev Admin status enumeration for proposal tracking
+ * @notice Represents different states of admin review process
+ */
+/**
+ * @dev Admin status enumeration for proposal tracking
+ * @notice Represents different states of admin review process
+ */
 type AdminStatus = "pending" | "in_review" | "rejected" | "published";
 
+// ============ Form Component Interfaces ============
+
+/**
+ * @dev Props interface for GeneralInfoForm component
+ * @notice Contains form data and handlers for basic asset information
+ */
 interface GeneralInfoFormProps {
-  formData: FormData;
-  handleGeneralInfoChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  handleAssetTypeChange: (value: string) => void;
+  formData: FormData; // Current form state
+  handleGeneralInfoChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void; // Input change handler
+  handleAssetTypeChange: (value: string) => void; // Asset category selection handler
 }
 
+/**
+ * @title General Information Form Component
+ * @dev Form section for basic asset details and user information
+ * @notice Collects asset name, type, descriptions, and auto-fills wallet address
+ */
 const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({
   formData,
   handleGeneralInfoChange,
@@ -58,6 +95,7 @@ const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({
       <CardDescription>Provide basic details about the asset you want to auction.</CardDescription>
     </CardHeader>
     <CardContent className="space-y-4">
+      {/* Asset Name Input */}
       <div className="space-y-2">
         <Label htmlFor="assetName">Asset Name</Label>
         <Input
@@ -68,6 +106,8 @@ const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({
           onChange={handleGeneralInfoChange}
         />
       </div>
+
+      {/* Asset Type Selection */}
       <div className="space-y-2">
         <Label htmlFor="assetType">Asset Type</Label>
         <Select value={formData.generalInfo.assetType} onValueChange={handleAssetTypeChange} required>
@@ -83,6 +123,8 @@ const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({
           </SelectContent>
         </Select>
       </div>
+
+      {/* Detailed Description */}
       <div className="space-y-2">
         <Label htmlFor="description">Asset Description</Label>
         <Textarea
@@ -94,6 +136,8 @@ const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({
           rows={5}
         />
       </div>
+
+      {/* Short Description with Word Counter */}
       <div className="space-y-2">
         <Label htmlFor="shortDescription">Short Description (max 100 words)</Label>
         <Textarea
@@ -108,6 +152,8 @@ const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({
           {formData.generalInfo.shortDescription.split(/\s+/).filter(Boolean).length} / 100 words
         </p>
       </div>
+
+      {/* Auto-filled Wallet Address */}
       <div className="space-y-2">
         <Label htmlFor="userAddress">Your Wallet Address</Label>
         <Input
@@ -122,12 +168,21 @@ const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({
   </Card>
 );
 
+/**
+ * @dev Props interface for AuctionSpecificsForm component
+ * @notice Contains form data and handlers for auction bidding parameters
+ */
 interface AuctionSpecificsFormProps {
-  formData: FormData;
-  handleAuctionSpecificsChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleDurationUnitChange: (value: "days" | "hours" | "minutes") => void;
+  formData: FormData; // Current form state
+  handleAuctionSpecificsChange: (e: React.ChangeEvent<HTMLInputElement>) => void; // Numeric input handler
+  handleDurationUnitChange: (value: "days" | "hours" | "minutes") => void; // Duration unit selection handler
 }
 
+/**
+ * @title Auction Specifics Form Component
+ * @dev Form section for auction parameters including starting bid and duration
+ * @notice Allows users to set minimum bid amount and auction duration with flexible time units
+ */
 const AuctionSpecificsForm: React.FC<AuctionSpecificsFormProps> = ({
   formData,
   handleAuctionSpecificsChange,
@@ -139,6 +194,7 @@ const AuctionSpecificsForm: React.FC<AuctionSpecificsFormProps> = ({
       <CardDescription>Set the bidding details and duration for your auction.</CardDescription>
     </CardHeader>
     <CardContent className="space-y-4">
+      {/* Starting Bid Amount Input */}
       <div className="space-y-2">
         <Label htmlFor="startingBid">Starting Bid Amount (in IDRX)</Label>
         <Input
@@ -151,6 +207,8 @@ const AuctionSpecificsForm: React.FC<AuctionSpecificsFormProps> = ({
           onChange={handleAuctionSpecificsChange}
         />
       </div>
+
+      {/* Auction Duration Configuration */}
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-1 space-y-2">
           <Label htmlFor="durationValue">Auction Duration</Label>
@@ -180,15 +238,28 @@ const AuctionSpecificsForm: React.FC<AuctionSpecificsFormProps> = ({
   </Card>
 );
 
+/**
+ * @dev Props interface for AssetDetailsForm component
+ * @notice Contains form data and handlers for asset-specific details and image management
+ */
 interface AssetDetailsFormProps {
-  formData: FormData;
-  handleDynamicAssetDetailsChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleRemoveImage: (index: number) => void;
-  handlePreviewClick: (url: string, title: string) => void;
-  firstImageFormat: string | null;
+  formData: FormData; // Current form state
+  handleDynamicAssetDetailsChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void; // Dynamic field handler
+  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void; // Image upload handler
+  handleRemoveImage: (index: number) => void; // Image removal handler
+  handlePreviewClick: (url: string, title: string) => void; // Image preview handler
+  firstImageFormat: string | null; // Format constraint for image consistency
 }
 
+/**
+ * @title Asset Details Form Component
+ * @dev Dynamic form section that adapts based on selected asset category
+ * @notice Provides:
+ *   - Category-specific attribute fields (watches, art, books, etc.)
+ *   - Image upload with format validation and preview
+ *   - Maximum 5 images with consistent format requirement
+ *   - Drag-and-drop interface for file uploads
+ */
 const AssetDetailsForm: React.FC<AssetDetailsFormProps> = ({
   formData,
   handleDynamicAssetDetailsChange,
@@ -197,6 +268,7 @@ const AssetDetailsForm: React.FC<AssetDetailsFormProps> = ({
   handlePreviewClick,
   firstImageFormat,
 }) => {
+  // Get dynamic fields based on selected asset type
   const selectedDynamicFields = dynamicAssetFields[formData.generalInfo.assetType] || dynamicAssetFields["Default"];
 
   return (
@@ -206,6 +278,7 @@ const AssetDetailsForm: React.FC<AssetDetailsFormProps> = ({
         <CardDescription>Provide specific details and images for your asset.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Dynamic Asset-Specific Fields */}
         {formData.generalInfo.assetType ? (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Specifics for {formData.generalInfo.assetType}</h3>
@@ -235,8 +308,10 @@ const AssetDetailsForm: React.FC<AssetDetailsFormProps> = ({
           <p className="text-muted-foreground">Select an Asset Type above to see specific details fields.</p>
         )}
 
+        {/* Image Upload Section */}
         <div className="space-y-2">
           <Label>Asset Images (Max 5)</Label>
+          {/* Upload Drop Zone */}
           <div
             className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
             onClick={() => document.getElementById("assetImages")?.click()}
@@ -253,6 +328,8 @@ const AssetDetailsForm: React.FC<AssetDetailsFormProps> = ({
               onChange={handleImageUpload}
               disabled={formData.imageFiles.length >= 5}
             />
+
+            {/* Upload Status Display */}
             {formData.imageFiles.length > 0 && (
               <p className="text-sm text-muted-foreground mt-2">
                 {formData.imageFiles.length} image(s) selected.{" "}
@@ -265,6 +342,8 @@ const AssetDetailsForm: React.FC<AssetDetailsFormProps> = ({
               </p>
             )}
           </div>
+
+          {/* Image Preview Grid */}
           {formData.imageFiles.length > 0 && (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-4">
               {formData.imageFiles.map((image, index) => (
@@ -276,6 +355,7 @@ const AssetDetailsForm: React.FC<AssetDetailsFormProps> = ({
                     objectFit="cover"
                     className="object-cover"
                   />
+                  {/* Remove Image Button */}
                   <Button
                     type="button"
                     variant="destructive"
@@ -289,6 +369,7 @@ const AssetDetailsForm: React.FC<AssetDetailsFormProps> = ({
                     <XCircle className="h-4 w-4" />
                     <span className="sr-only">Remove image</span>
                   </Button>
+                  {/* Preview Image Button */}
                   <Button
                     type="button"
                     variant="secondary"
@@ -312,7 +393,25 @@ const AssetDetailsForm: React.FC<AssetDetailsFormProps> = ({
   );
 };
 
+// ============ Main Component ============
+
+/**
+ * @title Main Auction Application Page Component
+ * @dev Complete auction proposal creation interface with multi-step workflow
+ * @notice Manages the entire auction proposal submission process including:
+ *   - Form state management across multiple steps
+ *   - Image upload and format validation
+ *   - IPFS metadata generation and upload
+ *   - Smart contract interaction for proposal submission
+ *   - Real-time status tracking and error handling
+ */
 export default function AuctionApplicationPage() {
+  // ============ Form State Management ============
+
+  /**
+   * @dev Main form data state containing all user inputs
+   * @notice Structured to match API requirements and contract parameters
+   */
   const [formData, setFormData] = useState<FormData>({
     generalInfo: {
       assetName: "",
@@ -330,24 +429,84 @@ export default function AuctionApplicationPage() {
     imageFiles: [],
   });
 
+  // ============ UI State Management ============
+
+  /**
+   * @dev Current step in the multi-step form process
+   * @notice 0 = Form input, 1 = Review and submit
+   */
   const [currentStep, setCurrentStep] = useState(0);
+
+  /**
+   * @dev Application submission status flag
+   * @notice Controls display between form and success status
+   */
   const [applicationSubmitted, setApplicationSubmitted] = useState(false);
+
+  /**
+   * @dev Mock admin confirmation status for demo purposes
+   * @notice In production, this would come from backend API
+   */
   const [adminConfirmationStatus] = useState<AdminStatus>("published");
+
+  /**
+   * @dev Date tracking for application timeline
+   * @notice Used for displaying submission and last update dates
+   */
   const [submittedDate, setSubmittedDate] = useState("");
   const [lastUpdatedDate, setLastUpdatedDate] = useState("");
+
+  /**
+   * @dev Image format constraint for consistency
+   * @notice Ensures all uploaded images have the same format
+   */
   const [firstImageFormat, setFirstImageFormat] = useState<string | null>(null);
+
+  /**
+   * @dev Loading state for submission process
+   * @notice Controls button states and loading indicators
+   */
   const [isLoading, setIsLoading] = useState(false);
+
+  /**
+   * @dev Status message for real-time user feedback
+   * @notice Shows current step in the submission process
+   */
   const [statusMessage, setStatusMessage] = useState("");
+
+  // ============ Image Preview Dialog State ============
+
+  /**
+   * @dev State management for image preview modal
+   * @notice Controls dialog visibility and preview content
+   */
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [previewImageTitle, setPreviewImageTitle] = useState<string>("");
 
+  // ============ Blockchain and Contract Integration ============
+
+  /**
+   * @dev Wallet client for blockchain interactions
+   * @notice Required for contract write operations and address detection
+   */
   const { data: walletClient } = useWalletClient();
+
+  /**
+   * @dev AuctionFactory contract instance for proposal submission
+   * @notice Handles the actual blockchain transaction for proposal creation
+   */
   const { data: auctionFactoryContract } = useScaffoldContract({
     contractName: "AuctionFactory",
     walletClient,
   });
 
+  // ============ Side Effects and Data Synchronization ============
+
+  /**
+   * @dev Auto-fill user wallet address when wallet is connected
+   * @notice Updates form data with connected wallet address for convenience
+   */
   useEffect(() => {
     if (walletClient?.account.address) {
       setFormData(prev => ({
@@ -360,6 +519,10 @@ export default function AuctionApplicationPage() {
     }
   }, [walletClient]);
 
+  /**
+   * @dev Set submission and update timestamps when application is submitted
+   * @notice Updates date fields for status tracking display
+   */
   useEffect(() => {
     if (applicationSubmitted && adminConfirmationStatus === "published") {
       const now = new Date();
@@ -369,19 +532,33 @@ export default function AuctionApplicationPage() {
     }
   }, [applicationSubmitted, adminConfirmationStatus]);
 
+  // ============ Form Event Handlers ============
+
+  /**
+   * @dev Handle changes to general information fields
+   * @notice Updates form state for asset name, descriptions, etc.
+   */
   const handleGeneralInfoChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, generalInfo: { ...prev.generalInfo, [id]: value } }));
   }, []);
 
+  /**
+   * @dev Handle asset type selection change
+   * @notice Resets asset details when category changes to prevent field conflicts
+   */
   const handleAssetTypeChange = useCallback((value: string) => {
     setFormData(prev => ({
       ...prev,
       generalInfo: { ...prev.generalInfo, assetType: value },
-      assetDetails: {},
+      assetDetails: {}, // Reset details when category changes
     }));
   }, []);
 
+  /**
+   * @dev Handle auction specifics input changes
+   * @notice Processes starting bid and duration value inputs with proper type conversion
+   */
   const handleAuctionSpecificsChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData(prev => ({
@@ -393,6 +570,10 @@ export default function AuctionApplicationPage() {
     }));
   }, []);
 
+  /**
+   * @dev Handle duration unit selection change
+   * @notice Updates time unit for auction duration (days/hours/minutes)
+   */
   const handleDurationUnitChange = useCallback((value: "days" | "hours" | "minutes") => {
     setFormData(prev => ({
       ...prev,
@@ -403,6 +584,10 @@ export default function AuctionApplicationPage() {
     }));
   }, []);
 
+  /**
+   * @dev Handle dynamic asset detail field changes
+   * @notice Updates category-specific attributes based on selected asset type
+   */
   const handleDynamicAssetDetailsChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { id, value } = e.target;
@@ -411,6 +596,15 @@ export default function AuctionApplicationPage() {
     [],
   );
 
+  // ============ Image Management Handlers ============
+
+  /**
+   * @dev Handle image file uploads with format validation
+   * @notice Processes multiple image files with the following constraints:
+   *   - Maximum 5 images allowed
+   *   - All images must have the same format (enforced after first upload)
+   *   - Converts files to base64 data URLs for preview
+   */
   const handleImageUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files) {
@@ -418,19 +612,23 @@ export default function AuctionApplicationPage() {
         const newImageFiles: { fileName: string; dataUrl: string; fileType: string }[] = [];
 
         for (const file of files) {
+          // Enforce maximum image limit
           if (formData.imageFiles.length + newImageFiles.length >= 5) {
-            alert("You can only upload a maximum of 5 images.");
+            setStatusMessage("Maximum 5 images allowed.");
             break;
           }
+
+          // Enforce format consistency
           if (!firstImageFormat) {
             setFirstImageFormat(file.type);
           } else if (file.type !== firstImageFormat) {
-            alert(
+            setStatusMessage(
               `All images must be of the same format. Please upload ${firstImageFormat.split("/")[1].toUpperCase()} files.`,
             );
             continue;
           }
 
+          // Convert file to base64 for preview
           const reader = new FileReader();
           reader.onloadend = () => {
             newImageFiles.push({ fileName: file.name, dataUrl: reader.result as string, fileType: file.type });
@@ -448,16 +646,24 @@ export default function AuctionApplicationPage() {
     [formData.imageFiles.length, firstImageFormat],
   );
 
+  /**
+   * @dev Remove image from upload list
+   * @notice Removes image at specified index and resets format constraint if no images remain
+   */
   const handleRemoveImage = useCallback((indexToRemove: number) => {
     setFormData(prev => {
       const updatedFiles = prev.imageFiles.filter((_, index) => index !== indexToRemove);
       if (updatedFiles.length === 0) {
-        setFirstImageFormat(null);
+        setFirstImageFormat(null); // Reset format constraint when no images remain
       }
       return { ...prev, imageFiles: updatedFiles };
     });
   }, []);
 
+  /**
+   * @dev Open image preview modal
+   * @notice Sets preview state and opens dialog for full-size image viewing
+   */
   const handlePreviewClick = useCallback((url: string | null, title: string) => {
     if (url) {
       setPreviewImageUrl(url);
@@ -466,27 +672,48 @@ export default function AuctionApplicationPage() {
     }
   }, []);
 
+  // ============ Form Navigation and Validation ============
+
+  /**
+   * @dev Handle progression to review step
+   * @notice Validates required fields before allowing user to proceed to review
+   */
   const handleNextToReview = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       const { generalInfo, auctionSpecifics, imageFiles } = formData;
+
+      // Validate required fields
       if (
         !generalInfo.assetName ||
         !generalInfo.assetType ||
         auctionSpecifics.startingBid === "" ||
         imageFiles.length === 0
       ) {
-        alert("Please fill in all required fields and upload at least one image.");
+        setStatusMessage("Please fill in all required fields and upload at least one image.");
         return;
       }
-      setCurrentStep(1);
+
+      setCurrentStep(1); // Proceed to review step
     },
     [formData],
   );
 
+  // ============ Blockchain Submission Handler ============
+
+  /**
+   * @dev Handle complete auction proposal submission process
+   * @notice Orchestrates the multi-step submission workflow:
+   *   1. Upload images and metadata to IPFS
+   *   2. Calculate auction duration in seconds
+   *   3. Convert starting bid to proper Wei format
+   *   4. Submit proposal to smart contract
+   *   5. Handle success/error states with user feedback
+   */
   const handleSubmitApplication = useCallback(async () => {
+    // Validate prerequisites
     if (!walletClient || !auctionFactoryContract) {
-      alert("Wallet not connected or contract not found.");
+      setStatusMessage("Wallet not connected or contract not found.");
       return;
     }
 
@@ -494,6 +721,8 @@ export default function AuctionApplicationPage() {
     setStatusMessage("1/3: Uploading metadata to IPFS...");
 
     try {
+      // ============ Step 1: Upload Metadata to IPFS ============
+
       const apiPayload = {
         generalInfo: formData.generalInfo,
         assetDetails: formData.assetDetails,
@@ -508,11 +737,16 @@ export default function AuctionApplicationPage() {
 
       const result = await response.json();
       if (!result.success) throw new Error(result.message || "Failed to create metadata.");
+
       const metadataUri = result.metadataUri;
       setStatusMessage("2/3: Metadata created! Preparing transaction...");
 
+      // ============ Step 2: Calculate Auction Duration ============
+
       const { durationValue, durationUnit, startingBid } = formData.auctionSpecifics;
       let durationInSeconds = 0;
+
+      // Convert duration to seconds based on selected unit
       if (durationUnit === "days") {
         durationInSeconds = durationValue * 24 * 60 * 60;
       } else if (durationUnit === "hours") {
@@ -525,7 +759,11 @@ export default function AuctionApplicationPage() {
         throw new Error("Auction duration must be positive.");
       }
 
+      // ============ Step 3: Convert Starting Bid to Wei ============
+
       const bigIntStartingBid = parseEther(startingBid);
+
+      // ============ Step 4: Submit to Smart Contract ============
 
       setStatusMessage("3/3: Please approve transaction in your wallet...");
       await auctionFactoryContract.write.submitProposal([metadataUri, bigIntStartingBid, BigInt(durationInSeconds)]);
@@ -535,12 +773,22 @@ export default function AuctionApplicationPage() {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
       setStatusMessage(`Error: ${errorMessage}`);
-      alert(`Failed to submit proposal: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
   }, [formData, walletClient, auctionFactoryContract]);
 
+  // ============ Review and Submit Component ============
+
+  /**
+   * @title Review and Submit Step Component
+   * @dev Final review interface before proposal submission
+   * @notice Displays:
+   *   - Complete summary of all form data
+   *   - Asset details organized by category
+   *   - Image gallery with preview functionality
+   *   - Final submission controls with loading states
+   */
   const ReviewSubmitStep = () => (
     <Card className="w-full max-w-2xl">
       <CardHeader>
@@ -552,6 +800,7 @@ export default function AuctionApplicationPage() {
           review.
         </p>
 
+        {/* General Information Summary */}
         <div className="space-y-2 border-b pb-4">
           <h3 className="text-lg font-semibold">General Information</h3>
           <ul className="list-none pl-0 text-sm text-muted-foreground space-y-1">
@@ -573,6 +822,7 @@ export default function AuctionApplicationPage() {
           </ul>
         </div>
 
+        {/* Auction Specifics Summary */}
         <div className="space-y-2 border-b pb-4">
           <h3 className="text-lg font-semibold">Auction Specifics</h3>
           <ul className="list-none pl-0 text-sm text-muted-foreground space-y-1">
@@ -587,6 +837,7 @@ export default function AuctionApplicationPage() {
           </ul>
         </div>
 
+        {/* Asset Details Summary */}
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">Asset Details</h3>
           {Object.keys(formData.assetDetails).length > 0 ? (
@@ -602,6 +853,7 @@ export default function AuctionApplicationPage() {
             <p className="text-sm text-muted-foreground">No specific asset details provided.</p>
           )}
 
+          {/* Image Gallery Summary */}
           <h4 className="text-md font-semibold mt-4">Asset Images ({formData.imageFiles.length})</h4>
           {formData.imageFiles.length > 0 ? (
             <div className="grid grid-cols-3 gap-2">
@@ -614,6 +866,7 @@ export default function AuctionApplicationPage() {
                     objectFit="cover"
                     className="object-cover"
                   />
+                  {/* Preview Button */}
                   <Button
                     type="button"
                     variant="secondary"
@@ -633,6 +886,7 @@ export default function AuctionApplicationPage() {
         </div>
       </CardContent>
 
+      {/* Action Buttons */}
       <CardFooter className="flex flex-col gap-4 pt-4 border-t">
         <div className="flex w-full justify-between gap-4">
           <Button type="button" variant="outline" onClick={() => setCurrentStep(0)} className="bg-transparent">
@@ -647,11 +901,22 @@ export default function AuctionApplicationPage() {
           </Button>
         </div>
 
+        {/* Status Message Display */}
         {isLoading && <p className="animate-pulse text-center text-sm text-muted-foreground">{statusMessage}</p>}
       </CardFooter>
     </Card>
   );
 
+  // ============ Image Preview Dialog Component ============
+
+  /**
+   * @title Image Preview Dialog Component
+   * @dev Modal component for full-size image viewing
+   * @notice Provides:
+   *   - Full-size image display with proper aspect ratio
+   *   - Image title and description
+   *   - Responsive modal layout
+   */
   const ImagePreviewDialog = () => (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden">
@@ -676,10 +941,20 @@ export default function AuctionApplicationPage() {
     </Dialog>
   );
 
+  // ============ Main Component Render ============
+
+  /**
+   * @dev Main component render with conditional step display
+   * @notice Renders different views based on application state:
+   *   - Form input (step 0)
+   *   - Review and submit (step 1)
+   *   - Success status (after submission)
+   */
   return (
     <ConnectWalletGuard pageName="Create Auction">
       <main className="flex-1 flex flex-col items-center justify-center bg-gray-100 p-4 md:p-6">
         {applicationSubmitted ? (
+          /* Application Success State */
           <div className="w-full max-w-2xl space-y-6">
             <ApplicationStatus
               status={adminConfirmationStatus}
@@ -688,6 +963,7 @@ export default function AuctionApplicationPage() {
             />
           </div>
         ) : currentStep === 0 ? (
+          /* Form Input Step */
           <form onSubmit={handleNextToReview} className="w-full max-w-2xl space-y-8">
             <GeneralInfoForm
               formData={formData}
@@ -718,6 +994,7 @@ export default function AuctionApplicationPage() {
             </div>
           </form>
         ) : (
+          /* Review and Submit Step */
           <ReviewSubmitStep />
         )}
       </main>

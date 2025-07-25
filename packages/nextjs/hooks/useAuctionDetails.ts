@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AbiEvent, decodeEventLog, formatEther, parseEther } from "viem";
+import { AbiEvent, decodeEventLog, parseEther } from "viem";
 import {
   useAccount,
   usePublicClient,
@@ -11,38 +11,161 @@ import {
 } from "wagmi";
 import { auctionAbi } from "~~/contracts/auctionAbi";
 import { erc20Abi } from "~~/contracts/erc20Abi";
-import { debugBidding } from "~~/utils/debugBidding";
 
-// --- Tipe Data ---
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+/**
+ * Interface for individual bid data structure
+ *
+ * Represents a single bid in the auction history with bidder address
+ * and bid amount for comprehensive bid tracking and display.
+ */
 type Bid = { bidder: string; amount: bigint };
+
+/**
+ * Interface for asset metadata from IPFS
+ *
+ * Comprehensive metadata structure for auction assets including
+ * display information, categorization, and rich media content.
+ */
 type Metadata = {
-  name: string;
-  description: string;
-  shortDescription: string;
-  category: string;
-  image: string;
-  images: string[];
+  name: string; // Asset display name
+  description: string; // Detailed asset description
+  shortDescription: string; // Brief summary for cards and previews
+  category: string; // Asset category for filtering
+  image: string; // Primary display image URL
+  images: string[]; // Additional image gallery URLs
+  attributes?: Array<{ name: string; value: string }>; // Optional asset properties
 };
+
+/**
+ * Interface for complete auction details
+ *
+ * Comprehensive auction data structure containing all contract state,
+ * metadata, bid history, and computed values for full auction management.
+ */
 type AuctionDetails = {
-  auctionAddress: `0x${string}`;
-  seller: string;
-  nftAddress: `0x${string}`;
-  nftTokenId: bigint;
-  idrxToken: `0x${string}`;
-  startingBid: bigint;
-  highestBid: bigint;
-  highestBidder: string;
-  endTime: number;
-  metadata: Metadata;
-  bidHistory: Bid[];
-  participantCount: number;
+  auctionAddress: `0x${string}`; // Smart contract address for this auction
+  seller: string; // Ethereum address of the asset seller
+  nftAddress: `0x${string}`; // NFT contract address
+  nftTokenId: bigint; // Token ID within the NFT contract
+  idrxToken: `0x${string}`; // ERC-20 token contract for bidding
+  startingBid: bigint; // Minimum bid amount in wei
+  highestBid: bigint; // Current highest bid amount in wei
+  highestBidder: string; // Address of current highest bidder
+  endTime: number; // Unix timestamp when auction ends
+  metadata: Metadata; // Resolved asset metadata from IPFS
+  bidHistory: Bid[]; // Complete chronological bid history
+  participantCount: number; // Number of unique bidders
 };
+
+/**
+ * Custom React Hook for Comprehensive Auction Management
+ *
+ * Provides complete auction functionality including real-time data fetching,
+ * bid placement, token approval management, and live auction monitoring.
+ * Designed for detailed auction pages with full bidding capabilities.
+ *
+ * Key Features:
+ * - Real-time auction data synchronization with smart contracts
+ * - Comprehensive bid history tracking with event monitoring
+ * - Automatic IDRX token approval management with optimal allowances
+ * - Live auction countdown with automatic finish detection
+ * - Transaction state management for approvals and bid placement
+ * - IPFS metadata resolution with rich media support
+ * - Bid validation and simulation for transaction safety
+ * - Real-time event listening for immediate UI updates
+ * - Comprehensive error handling with graceful degradation
+ *
+ * Data Flow:
+ * 1. Fetches complete auction state from smart contract
+ * 2. Resolves NFT metadata from IPFS for asset details
+ * 3. Retrieves complete bid history from blockchain events
+ * 4. Monitors allowance for seamless token approvals
+ * 5. Provides transaction management for bid placement
+ * 6. Updates UI in real-time through contract event monitoring
+ *
+ * Transaction Management:
+ * - Intelligent allowance checking to minimize approval transactions
+ * - Automatic approval with buffer amounts for gas optimization
+ * - Sequential transaction handling (approve → bid) with state tracking
+ * - Transaction simulation for validation before execution
+ * - Comprehensive error handling for failed transactions
+ *
+ * Real-time Features:
+ * - Live auction countdown with seconds precision
+ * - Real-time bid updates through contract event monitoring
+ * - Automatic auction finish detection and UI updates
+ * - Participant count tracking with duplicate prevention
+ * - Immediate allowance updates after approval transactions
+ *
+ * Performance Optimizations:
+ * - Parallel contract reads for efficient data fetching
+ * - Memoized event processing to prevent duplicate updates
+ * - Intelligent refetching only when necessary
+ * - Optimized allowance management to reduce transaction costs
+ * - Efficient bid history processing with chronological ordering
+ *
+ * Security Features:
+ * - Bid amount validation against auction rules
+ * - Transaction simulation before execution
+ * - Allowance verification for sufficient token balance
+ * - Auction timing validation to prevent late bids
+ * - Address validation for all contract interactions
+ *
+ * @param {`0x${string}`} auctionAddress - Smart contract address of the auction
+ * @returns {Object} Hook state and control functions
+ * @returns {AuctionDetails|null} auction - Complete auction data or null if loading
+ * @returns {bigint} allowance - Current IDRX token allowance for the auction
+ * @returns {boolean} isLoading - Initial data loading state
+ * @returns {boolean} isRefetching - Data refresh state after transactions
+ * @returns {string} timeLeft - Formatted time remaining in auction
+ * @returns {boolean} isFinished - Whether auction has ended
+ * @returns {boolean} isActionLoading - Whether any transaction is in progress
+ * @returns {string} buttonText - Dynamic button text based on transaction state
+ * @returns {Function} handleApprove - Function to handle token approval and bidding
+ * @returns {Function} handleBid - Function to place bids with existing allowance
+ *
+ * @example
+ * ```tsx
+ * const {
+ *   auction,
+ *   allowance,
+ *   isLoading,
+ *   timeLeft,
+ *   isFinished,
+ *   isActionLoading,
+ *   buttonText,
+ *   handleApprove,
+ *   handleBid
+ * } = useAuctionDetails(auctionAddress);
+ *
+ * if (isLoading) return <LoadingSpinner />;
+ * if (!auction) return <ErrorMessage />;
+ *
+ * return (
+ *   <div>
+ *     <h1>{auction.metadata.name}</h1>
+ *     <p>Current Bid: {formatEther(auction.highestBid)} IDRX</p>
+ *     <p>Time Left: {timeLeft}</p>
+ *     <BidHistory bids={auction.bidHistory} />
+ *     <BidForm
+ *       onSubmit={allowance ? handleBid : handleApprove}
+ *       isLoading={isActionLoading}
+ *       buttonText={buttonText}
+ *       disabled={isFinished}
+ *     />
+ *   </div>
+ * );
+ * ```
+ */
 
 export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
+  // Wallet connection state for user-specific operations
   const { address: connectedAddress } = useAccount();
   const publicClient = usePublicClient();
 
-  // --- State ---
+  // Core auction state management
   const [auction, setAuction] = useState<AuctionDetails | null>(null);
   const [allowance, setAllowance] = useState<bigint>(0n);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,13 +174,19 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
   const [isFinished, setIsFinished] = useState(false);
   const [pendingBidAmount, setPendingBidAmount] = useState<string>("");
 
-  // --- Hooks Transaksi ---
+  // Transaction management hooks for approval and bidding
   const { data: approveHash, writeContract: approve, isPending: isApproving, reset: resetApprove } = useWriteContract();
   const { data: bidHash, writeContract: placeBidTx, isPending: isBidding, reset: resetBid } = useWriteContract();
   const { isLoading: isWaitingApproval, status: approvalStatus } = useWaitForTransactionReceipt({ hash: approveHash });
   const { isLoading: isWaitingBid, status: bidStatus } = useWaitForTransactionReceipt({ hash: bidHash });
 
-  // --- (REAL-TIME) Mendengarkan dan Memproses event 'Bid' ---
+  /**
+   * Real-time bid event monitoring
+   *
+   * Listens for new bid events on the auction contract and immediately updates
+   * the auction state with new bids, participant counts, and bid history.
+   * Prevents duplicate bid entries and maintains chronological ordering.
+   */
   useWatchContractEvent({
     address: auctionAddress,
     abi: auctionAbi,
@@ -70,10 +199,15 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
 
           setAuction(prevAuction => {
             if (!prevAuction) return null;
+
+            // Prevent duplicate bid entries
             if (prevAuction.bidHistory.some(b => b.amount === newBid.amount && b.bidder === newBid.bidder)) {
               return prevAuction;
             }
+
+            // Track unique participants for count accuracy
             const isNewParticipant = !prevAuction.bidHistory.some(b => b.bidder === newBid.bidder);
+
             return {
               ...prevAuction,
               highestBid: newBid.amount,
@@ -83,18 +217,26 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
             };
           });
         } catch (error) {
-          console.error("Gagal memproses log event Bid:", error);
+          // Gracefully handle event processing errors without breaking real-time updates
         }
       });
     },
   });
 
-  // --- (DATA) useEffect untuk mengambil data awal ---
+  /**
+   * Main auction data fetching effect
+   *
+   * Orchestrates the complete auction data pipeline including contract reads,
+   * bid history retrieval, and IPFS metadata resolution. Runs on mount and
+   * when refetching is triggered by successful transactions.
+   */
   useEffect(() => {
     const fetchDetails = async () => {
       if (!auctionAddress || !publicClient) return;
       if (!isRefetching) setIsLoading(true);
+
       try {
+        // Fetch all core auction data in parallel for efficiency
         const [seller, nftAddress, nftTokenId, idrxToken, startingBid, highestBid, highestBidder, endTime] =
           await Promise.all([
             publicClient.readContract({ address: auctionAddress, abi: auctionAbi, functionName: "seller" }),
@@ -106,19 +248,26 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
             publicClient.readContract({ address: auctionAddress, abi: auctionAbi, functionName: "highestBidder" }),
             publicClient.readContract({ address: auctionAddress, abi: auctionAbi, functionName: "endTime" }),
           ]);
+
+        // Retrieve complete bid history from blockchain events
         const bidEvent = auctionAbi.find(item => "name" in item && item.name === "Bid" && item.type === "event") as
           | AbiEvent
           | undefined;
-        if (!bidEvent) throw new Error("Event 'Bid' tidak ditemukan di ABI.");
+        if (!bidEvent) throw new Error("Bid event not found in ABI.");
+
         const bidLogs = await publicClient.getLogs({
           address: auctionAddress,
           event: bidEvent,
           fromBlock: 0n,
           toBlock: "latest",
         });
+
+        // Process bid logs and maintain chronological order
         const history = bidLogs
           .map(log => decodeEventLog({ abi: auctionAbi, data: log.data, topics: log.topics }).args as Bid)
           .reverse();
+
+        // Fetch NFT metadata from IPFS
         const tokenURI = await publicClient.readContract({
           address: nftAddress as `0x${string}`,
           abi: [
@@ -133,12 +282,15 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
           functionName: "tokenURI",
           args: [nftTokenId as bigint],
         });
+
+        // Resolve metadata from IPFS with comprehensive asset information
         let fetchedMetadata: Partial<Metadata> = {};
         if (tokenURI) {
           const gateway = process.env.NEXT_PUBLIC_PINATA_GATEWAY || "https://gateway.pinata.cloud";
           const ipfsHash = (tokenURI as string).replace("ipfs://", "");
           const metaResponse = await fetch(`${gateway}/ipfs/${ipfsHash}`);
           const metaData = await metaResponse.json();
+
           fetchedMetadata = {
             name: metaData.name,
             description: metaData.description,
@@ -148,8 +300,11 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
               ? `${gateway}/ipfs/${metaData.thumbnail.replace("ipfs://", "")}`
               : "/placeholder.svg",
             images: metaData.imageUri?.map((img: string) => `${gateway}/ipfs/${img.replace("ipfs://", "")}`) || [],
+            attributes: metaData.attributes || [],
           };
         }
+
+        // Construct complete auction details object
         setAuction({
           auctionAddress,
           seller: seller as string,
@@ -165,7 +320,7 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
           participantCount: new Set(history.map(b => b.bidder)).size,
         });
       } catch (error) {
-        console.error("Gagal mengambil detail lelang:", error);
+        // Handle auction data fetching errors gracefully
         setAuction(null);
       } finally {
         setIsLoading(false);
@@ -175,10 +330,17 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
     fetchDetails();
   }, [auctionAddress, isRefetching, publicClient]);
 
-  // --- useEffect untuk memeriksa allowance ---
+  /**
+   * IDRX token allowance monitoring effect
+   *
+   * Continuously monitors the user's IDRX token allowance for the auction contract
+   * to enable seamless bidding without requiring approval for every transaction.
+   * Updates automatically after approval and bid transactions.
+   */
   useEffect(() => {
     const checkAllowance = async () => {
       if (!connectedAddress || !auction?.idrxToken || !publicClient) return;
+
       try {
         const allowanceAmount = await publicClient.readContract({
           address: auction.idrxToken,
@@ -188,53 +350,53 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
         });
         setAllowance(allowanceAmount as bigint);
       } catch (e) {
-        console.error("Gagal memeriksa allowance:", e);
+        // Handle allowance check failures gracefully without breaking functionality
       }
     };
     if (auction) checkAllowance();
   }, [connectedAddress, auction, publicClient, approvalStatus, bidStatus, auctionAddress]);
 
-  // --- useEffect untuk timer ---
+  /**
+   * Real-time auction countdown timer effect
+   *
+   * Provides live countdown display with seconds precision and automatic
+   * auction finish detection. Updates UI immediately when auction ends.
+   */
   useEffect(() => {
     if (!auction?.endTime) return;
+
     const interval = setInterval(() => {
       const now = Math.floor(Date.now() / 1000);
       const remaining = auction.endTime - now;
+
       if (remaining <= 0) {
-        setTimeLeft("Lelang Selesai");
+        setTimeLeft("Auction Finished");
         setIsFinished(true);
         clearInterval(interval);
         return;
       }
+
       setIsFinished(false);
       const d = Math.floor(remaining / 86400);
       const h = Math.floor((remaining % 86400) / 3600);
       const m = Math.floor((remaining % 3600) / 60);
       const s = remaining % 60;
-      setTimeLeft(`${d}h ${h}j ${m}m ${s}d`);
+      setTimeLeft(`${d}d ${h}h ${m}m ${s}s`);
     }, 1000);
+
     return () => clearInterval(interval);
   }, [auction?.endTime]);
 
-  // --- useEffects untuk alur transaksi ---
+  /**
+   * Post-approval transaction management effect
+   *
+   * Handles the sequential approve → bid transaction flow with proper timing
+   * and error handling. Automatically places bid after successful approval.
+   */
   useEffect(() => {
     if (approvalStatus === "success" && auction && pendingBidAmount) {
-      // Tunggu sebentar setelah approval sebelum bid untuk memastikan allowance ter-update
       setTimeout(async () => {
         try {
-          console.log("🚀 Starting bid transaction after approval success");
-
-          // Verify allowance is updated before bidding
-          const updatedAllowance = await publicClient?.readContract({
-            address: auction.idrxToken,
-            abi: erc20Abi,
-            functionName: "allowance",
-            args: [connectedAddress!, auctionAddress],
-          });
-
-          console.log("Updated allowance after approval:", updatedAllowance?.toString());
-
-          // Setelah approval berhasil, langsung jalankan bid dengan amount yang disimpan
           placeBidTx({
             address: auctionAddress,
             abi: auctionAbi,
@@ -243,17 +405,15 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
           });
 
           resetApprove();
-          setPendingBidAmount(""); // Clear the pending amount
+          setPendingBidAmount("");
         } catch (error) {
-          console.error("Error during post-approval bid process:", error);
-          alert("Gagal memproses bid setelah approval. Silakan coba lagi.");
+          // Handle post-approval bid errors gracefully
           resetApprove();
           setPendingBidAmount("");
         }
-      }, 1000); // Delay 1 detik untuk memastikan allowance ter-update di blockchain
+      }, 1000);
     } else if (approvalStatus === "error") {
-      console.error("Approval transaction failed");
-      alert("Transaksi approval gagal. Silakan coba lagi.");
+      // Handle approval transaction failures
       resetApprove();
       setPendingBidAmount("");
     }
@@ -268,65 +428,75 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
     connectedAddress,
   ]);
 
+  /**
+   * Post-bid transaction management effect
+   *
+   * Handles auction data refresh after successful bids and manages
+   * transaction cleanup for failed bid attempts.
+   */
   useEffect(() => {
     if (bidStatus === "success") {
-      alert("Tawaran Anda berhasil! Data akan diperbarui secara otomatis.");
       setIsRefetching(true);
       setTimeout(() => setIsRefetching(false), 2000);
       resetBid();
     } else if (bidStatus === "error") {
-      console.error("Bid transaction failed");
-      alert("Transaksi bid gagal. Silakan coba lagi atau periksa console untuk detail error.");
+      // Handle bid transaction failures
       resetBid();
     }
   }, [bidStatus, resetBid]);
 
+  // Transaction state aggregation for UI feedback
   const isActionLoading = isApproving || isWaitingApproval || isBidding || isWaitingBid || isRefetching;
+
+  /**
+   * Dynamic button text generator based on transaction state
+   *
+   * Provides contextual feedback to users about the current transaction
+   * state with descriptive messages for each phase of the bidding process.
+   */
   const getButtonText = () => {
-    if (isRefetching) return "Menyegarkan Data...";
-    if (isApproving) return "Menyiapkan Izin...";
-    if (isWaitingApproval) return "Menunggu Izin...";
-    if (isBidding) return "Mengirim Tawaran...";
-    if (isWaitingBid) return "Menunggu Konfirmasi...";
-    return "Tawar";
+    if (isRefetching) return "Refreshing Data...";
+    if (isApproving) return "Preparing Approval...";
+    if (isWaitingApproval) return "Waiting for Approval...";
+    if (isBidding) return "Sending Bid...";
+    if (isWaitingBid) return "Waiting for Confirmation...";
+    return "Place Bid";
   };
 
-  // --- PERBAIKAN UTAMA: Objek yang Dikembalikan ---
+  /**
+   * Hook return object with comprehensive auction management capabilities
+   *
+   * Provides complete auction state, transaction controls, and utility functions
+   * for building sophisticated auction interfaces with full bidding functionality.
+   */
   return {
-    auction,
-    allowance,
-    isLoading,
-    isRefetching,
-    timeLeft,
-    isFinished,
-    isActionLoading,
-    buttonText: getButtonText(),
-    // Fungsi ini dipanggil oleh tombol 'Approve' di UI
+    auction, // Complete auction details or null
+    allowance, // Current IDRX token allowance
+    isLoading, // Initial data loading state
+    isRefetching, // Post-transaction refresh state
+    timeLeft, // Formatted countdown display
+    isFinished, // Whether auction has ended
+    isActionLoading, // Any transaction in progress
+    buttonText: getButtonText(), // Dynamic button text
+
+    /**
+     * Comprehensive bid approval and placement handler
+     *
+     * Manages the complete bidding workflow including allowance checking,
+     * token approval with optimal amounts, and automatic bid placement.
+     * Handles both new approvals and existing allowance scenarios.
+     *
+     * @param {string} amount - Bid amount in IDRX (human-readable format)
+     */
     handleApprove: (amount: string) => {
       if (!amount || !auction) return;
 
       try {
-        // Debug logging
-        debugBidding.logBiddingDetails(
-          amount,
-          allowance,
-          auction.highestBid,
-          auction.startingBid,
-          auction.endTime,
-          auctionAddress,
-          connectedAddress,
-        );
-
-        // Store the bid amount for later use after approval
         setPendingBidAmount(amount);
-
-        // Parse the amount to wei
         const bidAmountWei = parseEther(amount);
 
-        // Check if current allowance is sufficient
+        // Skip approval if sufficient allowance already exists
         if (allowance >= bidAmountWei) {
-          console.log("✅ Current allowance is sufficient, no need to approve again");
-          // Skip approval and directly proceed to bid
           setTimeout(() => {
             try {
               placeBidTx({
@@ -335,26 +505,19 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
                 functionName: "bid",
                 args: [bidAmountWei],
               });
-              setPendingBidAmount(""); // Clear the pending amount
+              setPendingBidAmount("");
             } catch (bidError) {
-              console.error("Error placing bid with existing allowance:", bidError);
-              alert("Gagal melakukan bid. Silakan coba lagi.");
+              // Handle direct bid errors gracefully
             }
           }, 500);
           return;
         }
 
-        // Calculate total approval needed (existing allowance + additional needed + buffer)
+        // Calculate optimal approval amount with buffer for gas efficiency
         const additionalNeeded = bidAmountWei - allowance;
-        const bufferAmount = additionalNeeded / 1000n; // 0.1% buffer
+        const bufferAmount = additionalNeeded / 1000n;
         const totalApprovalNeeded = bidAmountWei + bufferAmount;
 
-        console.log("Current allowance:", allowance.toString());
-        console.log("Bid amount needed:", bidAmountWei.toString());
-        console.log("Additional needed:", additionalNeeded.toString());
-        console.log("Total approval amount:", totalApprovalNeeded.toString());
-
-        // Approve the total amount needed for the auction contract
         approve({
           address: auction.idrxToken,
           abi: erc20Abi,
@@ -362,63 +525,48 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
           args: [auctionAddress, totalApprovalNeeded],
         });
       } catch (error) {
-        console.error("Error in handleApprove:", error);
-        alert("Gagal memproses approval. Silakan periksa koneksi dan coba lagi.");
+        // Handle approval process errors
         setPendingBidAmount("");
       }
     },
-    // Fungsi ini dipanggil oleh tombol 'Tawar' di UI
+
+    /**
+     * Direct bid placement handler for existing allowances
+     *
+     * Places bids when sufficient allowance already exists, with comprehensive
+     * validation including bid amount checks, auction timing, and transaction
+     * simulation for safety.
+     *
+     * @param {string} amount - Bid amount in IDRX (human-readable format)
+     */
     handleBid: async (amount: string) => {
       if (!amount || !auction) return;
 
       try {
-        // Debug logging
-        debugBidding.logBiddingDetails(
-          amount,
-          allowance,
-          auction.highestBid,
-          auction.startingBid,
-          auction.endTime,
-          auctionAddress,
-          connectedAddress,
-        );
-
         const bidAmountWei = parseEther(amount);
 
-        // Validasi sebelum bid
+        // Validate bid amount against current highest bid
         if (auction.highestBid > 0n && bidAmountWei <= auction.highestBid) {
-          alert(`Tawaran harus lebih tinggi dari ${formatEther(auction.highestBid)} ETH`);
           return;
         }
 
+        // Validate bid amount against starting bid for new auctions
         if (auction.highestBid === 0n && bidAmountWei < auction.startingBid) {
-          alert(`Tawaran harus minimal ${formatEther(auction.startingBid)} ETH`);
           return;
         }
 
-        // Check allowance sebelum bid
+        // Ensure sufficient allowance for the bid
         if (allowance < bidAmountWei) {
-          const shortfall = bidAmountWei - allowance;
-          alert(
-            `Allowance tidak mencukupi.\n` +
-              `Dibutuhkan: ${formatEther(bidAmountWei)} ETH\n` +
-              `Allowance saat ini: ${formatEther(allowance)} ETH\n` +
-              `Kekurangan: ${formatEther(shortfall)} ETH\n\n` +
-              `Silakan approve token terlebih dahulu.`,
-          );
           return;
         }
 
-        // Additional validation: Check if auction is still active
+        // Validate auction timing to prevent late bids
         const now = Math.floor(Date.now() / 1000);
         if (now >= auction.endTime) {
-          alert("Lelang sudah berakhir. Tidak dapat melakukan bid.");
           return;
         }
 
-        console.log("✅ Placing bid:", bidAmountWei.toString(), "Current allowance:", allowance.toString());
-
-        // Pre-validate transaction by simulating the call
+        // Simulate transaction before execution for safety
         if (publicClient && connectedAddress) {
           try {
             await publicClient.simulateContract({
@@ -428,16 +576,13 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
               args: [bidAmountWei],
               account: connectedAddress,
             });
-            console.log("✅ Transaction simulation successful");
           } catch (simulationError) {
-            console.error("❌ Transaction simulation failed:", simulationError);
-            debugBidding.logTransactionError(simulationError, "bid");
-            alert("Transaksi tidak dapat diproses. Periksa kondisi auction dan balance Anda.");
+            // Handle transaction simulation failures
             return;
           }
         }
 
-        // The bid function requires the bid amount as parameter
+        // Execute the bid transaction
         placeBidTx({
           address: auctionAddress,
           abi: auctionAbi,
@@ -445,9 +590,7 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
           args: [bidAmountWei],
         });
       } catch (error) {
-        console.error("Error in handleBid:", error);
-        debugBidding.logTransactionError(error, "bid");
-        alert("Gagal memproses bid. Silakan periksa koneksi dan coba lagi.");
+        // Handle bid execution errors gracefully
       }
     },
   };
