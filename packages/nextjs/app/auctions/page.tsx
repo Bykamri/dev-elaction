@@ -130,10 +130,8 @@ const AuctionsPage = () => {
       <div className="container mx-auto px-4 md:px-6 py-8">
         {/* Page Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight">Daftar Lelang</h1>
-          <p className="text-lg text-base-content/70 mt-2">
-            Temukan dan ajukan penawaran untuk aset yang Anda inginkan.
-          </p>
+          <h1 className="text-4xl font-bold tracking-tight">Auction Listings</h1>
+          <p className="text-lg text-base-content/70 mt-2">Discover and bid on the assets you desire.</p>
         </div>
 
         {/* Main Content Layout */}

@@ -10,6 +10,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { auctionAbi } from "~~/contracts/auctionAbi";
+import deployedContracts from "~~/contracts/deployedContracts";
 import { erc20Abi } from "~~/contracts/erc20Abi";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -65,101 +66,7 @@ type AuctionDetails = {
  * Provides complete auction functionality including real-time data fetching,
  * bid placement, token approval management, and live auction monitoring.
  * Designed for detailed auction pages with full bidding capabilities.
- *
- * Key Features:
- * - Real-time auction data synchronization with smart contracts
- * - Comprehensive bid history tracking with event monitoring
- * - Automatic IDRX token approval management with optimal allowances
- * - Live auction countdown with automatic finish detection
- * - Transaction state management for approvals and bid placement
- * - IPFS metadata resolution with rich media support
- * - Bid validation and simulation for transaction safety
- * - Real-time event listening for immediate UI updates
- * - Comprehensive error handling with graceful degradation
- *
- * Data Flow:
- * 1. Fetches complete auction state from smart contract
- * 2. Resolves NFT metadata from IPFS for asset details
- * 3. Retrieves complete bid history from blockchain events
- * 4. Monitors allowance for seamless token approvals
- * 5. Provides transaction management for bid placement
- * 6. Updates UI in real-time through contract event monitoring
- *
- * Transaction Management:
- * - Intelligent allowance checking to minimize approval transactions
- * - Automatic approval with buffer amounts for gas optimization
- * - Sequential transaction handling (approve → bid) with state tracking
- * - Transaction simulation for validation before execution
- * - Comprehensive error handling for failed transactions
- *
- * Real-time Features:
- * - Live auction countdown with seconds precision
- * - Real-time bid updates through contract event monitoring
- * - Automatic auction finish detection and UI updates
- * - Participant count tracking with duplicate prevention
- * - Immediate allowance updates after approval transactions
- *
- * Performance Optimizations:
- * - Parallel contract reads for efficient data fetching
- * - Memoized event processing to prevent duplicate updates
- * - Intelligent refetching only when necessary
- * - Optimized allowance management to reduce transaction costs
- * - Efficient bid history processing with chronological ordering
- *
- * Security Features:
- * - Bid amount validation against auction rules
- * - Transaction simulation before execution
- * - Allowance verification for sufficient token balance
- * - Auction timing validation to prevent late bids
- * - Address validation for all contract interactions
- *
- * @param {`0x${string}`} auctionAddress - Smart contract address of the auction
- * @returns {Object} Hook state and control functions
- * @returns {AuctionDetails|null} auction - Complete auction data or null if loading
- * @returns {bigint} allowance - Current IDRX token allowance for the auction
- * @returns {boolean} isLoading - Initial data loading state
- * @returns {boolean} isRefetching - Data refresh state after transactions
- * @returns {string} timeLeft - Formatted time remaining in auction
- * @returns {boolean} isFinished - Whether auction has ended
- * @returns {boolean} isActionLoading - Whether any transaction is in progress
- * @returns {string} buttonText - Dynamic button text based on transaction state
- * @returns {Function} handleApprove - Function to handle token approval and bidding
- * @returns {Function} handleBid - Function to place bids with existing allowance
- *
- * @example
- * ```tsx
- * const {
- *   auction,
- *   allowance,
- *   isLoading,
- *   timeLeft,
- *   isFinished,
- *   isActionLoading,
- *   buttonText,
- *   handleApprove,
- *   handleBid
- * } = useAuctionDetails(auctionAddress);
- *
- * if (isLoading) return <LoadingSpinner />;
- * if (!auction) return <ErrorMessage />;
- *
- * return (
- *   <div>
- *     <h1>{auction.metadata.name}</h1>
- *     <p>Current Bid: {formatEther(auction.highestBid)} IDRX</p>
- *     <p>Time Left: {timeLeft}</p>
- *     <BidHistory bids={auction.bidHistory} />
- *     <BidForm
- *       onSubmit={allowance ? handleBid : handleApprove}
- *       isLoading={isActionLoading}
- *       buttonText={buttonText}
- *       disabled={isFinished}
- *     />
- *   </div>
- * );
- * ```
  */
-
 export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
   // Wallet connection state for user-specific operations
   const { address: connectedAddress } = useAccount();
@@ -173,19 +80,25 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
   const [timeLeft, setTimeLeft] = useState("");
   const [isFinished, setIsFinished] = useState(false);
   const [pendingBidAmount, setPendingBidAmount] = useState<string>("");
+  const [proposalId, setProposalId] = useState<bigint | null>(null);
 
-  // Transaction management hooks for approval and bidding
+  // Transaction management hooks for approval, bidding, and ending auction
   const { data: approveHash, writeContract: approve, isPending: isApproving, reset: resetApprove } = useWriteContract();
   const { data: bidHash, writeContract: placeBidTx, isPending: isBidding, reset: resetBid } = useWriteContract();
+  const {
+    data: endAuctionHash,
+    writeContract: finalizeAuctionTx,
+    isPending: isEndingAuction,
+    reset: resetEndAuction,
+  } = useWriteContract();
   const { isLoading: isWaitingApproval, status: approvalStatus } = useWaitForTransactionReceipt({ hash: approveHash });
   const { isLoading: isWaitingBid, status: bidStatus } = useWaitForTransactionReceipt({ hash: bidHash });
+  const { isLoading: isWaitingEndAuction, status: endAuctionStatus } = useWaitForTransactionReceipt({
+    hash: endAuctionHash,
+  });
 
   /**
    * Real-time bid event monitoring
-   *
-   * Listens for new bid events on the auction contract and immediately updates
-   * the auction state with new bids, participant counts, and bid history.
-   * Prevents duplicate bid entries and maintains chronological ordering.
    */
   useWatchContractEvent({
     address: auctionAddress,
@@ -225,10 +138,6 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
 
   /**
    * Main auction data fetching effect
-   *
-   * Orchestrates the complete auction data pipeline including contract reads,
-   * bid history retrieval, and IPFS metadata resolution. Runs on mount and
-   * when refetching is triggered by successful transactions.
    */
   useEffect(() => {
     const fetchDetails = async () => {
@@ -304,6 +213,42 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
           };
         }
 
+        // Find the proposalId for this auction address by searching AuctionFactory
+        let foundProposalId: bigint | null = null;
+        try {
+          const chainId = publicClient.chain?.id;
+          if (chainId && deployedContracts[chainId as keyof typeof deployedContracts]?.AuctionFactory) {
+            const auctionFactoryAddress = deployedContracts[chainId as keyof typeof deployedContracts].AuctionFactory
+              .address as `0x${string}`;
+            const auctionFactoryAbi = deployedContracts[chainId as keyof typeof deployedContracts].AuctionFactory.abi;
+
+            // Get total proposals count
+            const proposalsCount = (await publicClient.readContract({
+              address: auctionFactoryAddress,
+              abi: auctionFactoryAbi,
+              functionName: "getProposalsCount",
+            })) as bigint;
+
+            // Search through proposals to find matching auction address
+            for (let i = 0n; i < proposalsCount; i++) {
+              const proposal = (await publicClient.readContract({
+                address: auctionFactoryAddress,
+                abi: auctionFactoryAbi,
+                functionName: "getProposal",
+                args: [i],
+              })) as any;
+
+              if (proposal.deployedAuctionAddress === auctionAddress) {
+                foundProposalId = i;
+                break;
+              }
+            }
+          }
+        } catch (proposalError) {
+          console.warn("Could not find proposal ID for auction:", proposalError);
+        }
+        setProposalId(foundProposalId);
+
         // Construct complete auction details object
         setAuction({
           auctionAddress,
@@ -332,10 +277,6 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
 
   /**
    * IDRX token allowance monitoring effect
-   *
-   * Continuously monitors the user's IDRX token allowance for the auction contract
-   * to enable seamless bidding without requiring approval for every transaction.
-   * Updates automatically after approval and bid transactions.
    */
   useEffect(() => {
     const checkAllowance = async () => {
@@ -358,9 +299,6 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
 
   /**
    * Real-time auction countdown timer effect
-   *
-   * Provides live countdown display with seconds precision and automatic
-   * auction finish detection. Updates UI immediately when auction ends.
    */
   useEffect(() => {
     if (!auction?.endTime) return;
@@ -389,9 +327,6 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
 
   /**
    * Post-approval transaction management effect
-   *
-   * Handles the sequential approve → bid transaction flow with proper timing
-   * and error handling. Automatically places bid after successful approval.
    */
   useEffect(() => {
     if (approvalStatus === "success" && auction && pendingBidAmount) {
@@ -430,9 +365,6 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
 
   /**
    * Post-bid transaction management effect
-   *
-   * Handles auction data refresh after successful bids and manages
-   * transaction cleanup for failed bid attempts.
    */
   useEffect(() => {
     if (bidStatus === "success") {
@@ -445,14 +377,33 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
     }
   }, [bidStatus, resetBid]);
 
+  /**
+   * Post-end auction transaction management effect
+   */
+  useEffect(() => {
+    if (endAuctionStatus === "success") {
+      setIsRefetching(true);
+      setIsFinished(true);
+      setTimeout(() => setIsRefetching(false), 2000);
+      resetEndAuction();
+    } else if (endAuctionStatus === "error") {
+      // Handle end auction transaction failures
+      resetEndAuction();
+    }
+  }, [endAuctionStatus, resetEndAuction]);
+
   // Transaction state aggregation for UI feedback
-  const isActionLoading = isApproving || isWaitingApproval || isBidding || isWaitingBid || isRefetching;
+  const isActionLoading =
+    isApproving ||
+    isWaitingApproval ||
+    isBidding ||
+    isWaitingBid ||
+    isEndingAuction ||
+    isWaitingEndAuction ||
+    isRefetching;
 
   /**
    * Dynamic button text generator based on transaction state
-   *
-   * Provides contextual feedback to users about the current transaction
-   * state with descriptive messages for each phase of the bidding process.
    */
   const getButtonText = () => {
     if (isRefetching) return "Refreshing Data...";
@@ -460,14 +411,13 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
     if (isWaitingApproval) return "Waiting for Approval...";
     if (isBidding) return "Sending Bid...";
     if (isWaitingBid) return "Waiting for Confirmation...";
+    if (isEndingAuction) return "Ending Auction...";
+    if (isWaitingEndAuction) return "Waiting for Confirmation...";
     return "Place Bid";
   };
 
   /**
    * Hook return object with comprehensive auction management capabilities
-   *
-   * Provides complete auction state, transaction controls, and utility functions
-   * for building sophisticated auction interfaces with full bidding functionality.
    */
   return {
     auction, // Complete auction details or null
@@ -481,12 +431,6 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
 
     /**
      * Comprehensive bid approval and placement handler
-     *
-     * Manages the complete bidding workflow including allowance checking,
-     * token approval with optimal amounts, and automatic bid placement.
-     * Handles both new approvals and existing allowance scenarios.
-     *
-     * @param {string} amount - Bid amount in IDRX (human-readable format)
      */
     handleApprove: (amount: string) => {
       if (!amount || !auction) return;
@@ -532,12 +476,6 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
 
     /**
      * Direct bid placement handler for existing allowances
-     *
-     * Places bids when sufficient allowance already exists, with comprehensive
-     * validation including bid amount checks, auction timing, and transaction
-     * simulation for safety.
-     *
-     * @param {string} amount - Bid amount in IDRX (human-readable format)
      */
     handleBid: async (amount: string) => {
       if (!amount || !auction) return;
@@ -591,6 +529,109 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
         });
       } catch (error) {
         // Handle bid execution errors gracefully
+      }
+    },
+
+    /**
+     * End auction handler for admin users
+     *
+     * Calls finalizeAuction on the AuctionFactory contract with the proposalId.
+     * This is the correct way to end auctions as the AuctionFactory is the owner
+     * of individual auction contracts.
+     */
+    handleEndAuction: async () => {
+      console.log("🔧 handleEndAuction called");
+      console.log("📋 Current state:", {
+        hasAuction: !!auction,
+        hasAddress: !!connectedAddress,
+        isFinished,
+        auctionEndTime: auction?.endTime,
+        currentTime: Math.floor(Date.now() / 1000),
+        auctionAddress,
+        proposalId,
+      });
+
+      if (!auction || !connectedAddress || !publicClient) {
+        console.log("❌ Missing required dependencies");
+        return;
+      }
+
+      if (!isFinished) {
+        console.log("❌ Auction is not finished yet");
+        return;
+      }
+
+      if (proposalId === null) {
+        console.log("❌ Proposal ID not found");
+        alert("Error ending auction: Could not find proposal ID for this auction");
+        return;
+      }
+
+      try {
+        const chainId = publicClient.chain?.id;
+        if (!chainId || !deployedContracts[chainId as keyof typeof deployedContracts]?.AuctionFactory) {
+          throw new Error("AuctionFactory contract not found for this network");
+        }
+
+        const auctionFactoryAddress = deployedContracts[chainId as keyof typeof deployedContracts].AuctionFactory
+          .address as `0x${string}`;
+        const auctionFactoryAbi = deployedContracts[chainId as keyof typeof deployedContracts].AuctionFactory.abi;
+
+        console.log("🚀 Starting finalize auction transaction...");
+        console.log("📍 AuctionFactory address:", auctionFactoryAddress);
+        console.log("🆔 Proposal ID:", proposalId.toString());
+        console.log("👤 Connected address:", connectedAddress);
+
+        // First, simulate the transaction to validate it will succeed
+        console.log("🔍 Simulating finalize auction transaction...");
+        await publicClient.simulateContract({
+          address: auctionFactoryAddress,
+          abi: auctionFactoryAbi,
+          functionName: "finalizeAuction",
+          args: [proposalId],
+          account: connectedAddress,
+        });
+
+        console.log("✅ Simulation successful, executing transaction...");
+
+        // Execute the finalize auction transaction on AuctionFactory
+        const result = finalizeAuctionTx({
+          address: auctionFactoryAddress,
+          abi: auctionFactoryAbi,
+          functionName: "finalizeAuction",
+          args: [proposalId],
+        });
+
+        console.log("✅ Finalize auction transaction submitted:", result);
+      } catch (error: any) {
+        console.error("❌ Finalize auction execution error:", error);
+
+        // Parse error message for user-friendly display
+        let errorMessage = "Failed to end auction";
+        if (error?.message) {
+          if (error.message.includes("already ended")) {
+            errorMessage = "Auction has already been ended";
+          } else if (
+            error.message.includes("AccessControlUnauthorizedAccount") ||
+            error.message.includes("DEFAULT_ADMIN_ROLE")
+          ) {
+            errorMessage =
+              "Only platform administrators can end auctions. Please contact support if this auction should be ended.";
+          } else if (error.message.includes("not yet ended")) {
+            errorMessage = "Auction cannot be ended yet - time has not expired";
+          } else if (error.message.includes("Auction is not live")) {
+            errorMessage = "This auction is not in a live state and cannot be ended";
+          } else if (error.message.includes("Auction contract not found")) {
+            errorMessage = "Could not find the auction contract for this proposal";
+          } else if (error.message.includes("Bad Request")) {
+            errorMessage = "Invalid transaction parameters";
+          } else {
+            errorMessage = error.message;
+          }
+        }
+
+        // Show user-friendly error
+        alert(`Error ending auction: ${errorMessage}`);
       }
     },
   };

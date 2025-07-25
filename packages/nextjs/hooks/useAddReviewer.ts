@@ -70,8 +70,8 @@ export const useAddReviewer = () => {
   // Error state management for user feedback
   const [error, setError] = useState<string | null>(null);
 
-  // Contract deployment information and ABI access
-  const { data: deployedContractData } = useDeployedContractInfo("AuctionFactory");
+  // Contract deployment information and ABI access using object parameter
+  const { data: deployedContractData } = useDeployedContractInfo({ contractName: "AuctionFactory" });
 
   // Wagmi hook for contract write operations
   const { writeContractAsync } = useWriteContract();

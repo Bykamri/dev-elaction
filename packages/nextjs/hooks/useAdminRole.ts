@@ -56,16 +56,19 @@ import { useDeployedContractInfo } from "~~/hooks/scaffold-eth";
  * @returns {Object} Role verification utilities and state
  * @returns {string|undefined} address - Current connected wallet address
  * @returns {boolean} isAdmin - True if user has admin role
+ * @returns {boolean} isReviewer - True if user has reviewer role
  * @returns {boolean} isDeployer - True if user has deployer privileges
+ * @returns {boolean} canEndAuctions - True if user can end auctions (admin or reviewer)
  * @returns {boolean} isConnected - True if wallet is connected
  * @returns {boolean} hasAdminRole - Raw admin role status from contract
+ * @returns {boolean} hasReviewerRole - Raw reviewer role status from contract
  */
 export const useAdminRole = () => {
   // Get current wallet connection details
   const { address } = useAccount();
 
-  // Access deployed AuctionFactory contract information
-  const { data: deployedContractData } = useDeployedContractInfo("AuctionFactory");
+  // Access deployed AuctionFactory contract information using object parameter
+  const { data: deployedContractData } = useDeployedContractInfo({ contractName: "AuctionFactory" });
 
   /**
    * Fetch the DEFAULT_ADMIN_ROLE identifier from the contract
@@ -78,6 +81,22 @@ export const useAdminRole = () => {
     address: deployedContractData?.address,
     abi: deployedContractData?.abi,
     functionName: "DEFAULT_ADMIN_ROLE",
+    query: {
+      // Only execute when contract is deployed and user is connected
+      enabled: !!deployedContractData && !!address,
+    },
+  });
+
+  /**
+   * Fetch the REVIEWER_ROLE identifier from the contract
+   *
+   * This reads the REVIEWER_ROLE constant which is used for reviewer
+   * permissions in the auction platform system.
+   */
+  const { data: reviewerRole } = useReadContract({
+    address: deployedContractData?.address,
+    abi: deployedContractData?.abi,
+    functionName: "REVIEWER_ROLE",
     query: {
       // Only execute when contract is deployed and user is connected
       enabled: !!deployedContractData && !!address,
@@ -103,6 +122,24 @@ export const useAdminRole = () => {
   });
 
   /**
+   * Check if the current user has the reviewer role
+   *
+   * Calls the hasRole function from OpenZeppelin's AccessControl to verify
+   * if the connected address has the REVIEWER_ROLE. This provides
+   * real-time role verification for reviewer permissions.
+   */
+  const { data: hasReviewerRole } = useReadContract({
+    address: deployedContractData?.address,
+    abi: deployedContractData?.abi,
+    functionName: "hasRole",
+    args: [reviewerRole, address],
+    query: {
+      // Only execute when all dependencies are available
+      enabled: !!deployedContractData && !!address && !!reviewerRole,
+    },
+  });
+
+  /**
    * Determines if the current user has administrative privileges
    *
    * Performs comprehensive validation to ensure all required conditions
@@ -115,6 +152,20 @@ export const useAdminRole = () => {
     // Fail-safe: return false if any required data is missing
     if (!address || !deployedContractData || hasAdminRole === undefined) return false;
     return hasAdminRole as boolean;
+  };
+
+  /**
+   * Determines if the current user has reviewer privileges
+   *
+   * Checks if the user has the REVIEWER_ROLE in the contract.
+   * Reviewers can perform specific actions like reviewing proposals.
+   *
+   * @returns {boolean} True if user has reviewer privileges, false otherwise
+   */
+  const isReviewer = () => {
+    // Fail-safe: return false if any required data is missing
+    if (!address || !deployedContractData || hasReviewerRole === undefined) return false;
+    return hasReviewerRole as boolean;
   };
 
   /**
@@ -133,6 +184,18 @@ export const useAdminRole = () => {
   };
 
   /**
+   * Determines if the current user can end auctions
+   *
+   * Checks if the user has either admin (deployer) or reviewer privileges.
+   * Both roles are authorized to manually end auctions in the system.
+   *
+   * @returns {boolean} True if user can end auctions, false otherwise
+   */
+  const canEndAuctions = () => {
+    return isAdmin() || isReviewer();
+  };
+
+  /**
    * Hook return object containing admin role state and verification functions
    *
    * Provides comprehensive admin role management capabilities with current
@@ -142,8 +205,11 @@ export const useAdminRole = () => {
   return {
     address, // Current wallet address (string | undefined)
     isAdmin: isAdmin(), // Boolean result of admin privilege check
+    isReviewer: isReviewer(), // Boolean result of reviewer privilege check
     isDeployer: isDeployer(), // Boolean result of deployer privilege check
+    canEndAuctions: canEndAuctions(), // Boolean result of auction ending privilege check
     isConnected: !!address, // Boolean indicating wallet connection status
-    hasAdminRole: hasAdminRole as boolean, // Raw role verification result from contract
+    hasAdminRole: hasAdminRole as boolean, // Raw admin role verification result from contract
+    hasReviewerRole: hasReviewerRole as boolean, // Raw reviewer role verification result from contract
   };
 };

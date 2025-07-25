@@ -205,6 +205,21 @@ export function AuctionDetailMain({
 
         {/* Right section: Auction information and bidding interface (1/3 width on desktop) */}
         <div className="md:col-span-1 space-y-6">
+          {/* Auction Ended Banner - Prominent visual indicator */}
+          {isFinished && (
+            <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 rounded-lg shadow-lg border-2 border-red-300">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Clock className="w-6 h-6" />
+                <span className="text-xl font-bold">AUCTION ENDED</span>
+              </div>
+              <div className="text-center text-sm opacity-90">
+                {auction.highestBid > 0n
+                  ? `Won by ${auction.highestBidder.substring(0, 8)}... for ${formatEther(auction.highestBid)} IDRX`
+                  : "No bids were placed during this auction"}
+              </div>
+            </div>
+          )}
+
           <Card className="relative">
             {/* Loading overlay for data refetching */}
             {isRefetching && (
@@ -218,10 +233,24 @@ export function AuctionDetailMain({
             <CardHeader>
               <div className="flex items-center justify-between mb-2">
                 <h1 className="text-3xl font-bold text-foreground">{metadata.name}</h1>
-                <Badge className={categoryInfo.className}>
-                  <IconComponent className="w-4 h-4 mr-1" />
-                  {metadata.category}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge className={categoryInfo.className}>
+                    <IconComponent className="w-4 h-4 mr-1" />
+                    {metadata.category}
+                  </Badge>
+                  {/* Auction status badge - prominent indicator */}
+                  {isFinished ? (
+                    <Badge variant="destructive" className="bg-red-600 text-white font-semibold">
+                      <Clock className="w-4 h-4 mr-1" />
+                      ENDED
+                    </Badge>
+                  ) : (
+                    <Badge variant="default" className="bg-green-600 text-white font-semibold animate-pulse">
+                      <Clock className="w-4 h-4 mr-1" />
+                      LIVE
+                    </Badge>
+                  )}
+                </div>
               </div>
               <CardDescription className="text-muted-foreground text-base">{metadata.shortDescription}</CardDescription>
             </CardHeader>
@@ -234,9 +263,18 @@ export function AuctionDetailMain({
                   <Users className="w-5 h-5 mr-2" />
                   <span>{auction.participantCount} Participants</span>
                 </div>
-                <Badge className={!isFinished ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                  {!isFinished ? "Live" : "Closed"}
-                </Badge>
+                {/* Enhanced status badge with different styling */}
+                {!isFinished ? (
+                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 font-semibold px-3 py-1 animate-pulse">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-ping"></div>
+                    Live Auction
+                  </Badge>
+                ) : (
+                  <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 font-semibold px-3 py-1">
+                    <Clock className="w-3 h-3 mr-1" />
+                    Auction Closed
+                  </Badge>
+                )}
               </div>
               <Separator />
 
@@ -247,7 +285,17 @@ export function AuctionDetailMain({
                   <p className="text-lg text-muted-foreground">
                     {isFinished ? (auction.highestBid > 0n ? "Final Price" : "Unsold") : "Current Bid"}
                   </p>
-                  <p className="text-5xl font-bold text-primary">{formatEther(displayBidAmount)} IDRX</p>
+                  <div className="relative">
+                    <p className="text-5xl font-bold text-primary">{formatEther(displayBidAmount)} IDRX</p>
+                    {/* Final price indicator for ended auctions */}
+                    {isFinished && (
+                      <div className="absolute -top-2 -right-2">
+                        <Badge variant="destructive" className="text-xs px-2 py-1">
+                          FINAL
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Time remaining display */}
                   <div className="flex items-center text-muted-foreground">

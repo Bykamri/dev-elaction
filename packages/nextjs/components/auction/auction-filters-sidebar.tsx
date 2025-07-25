@@ -152,7 +152,7 @@ export function AuctionFiltersSidebar({
 
         {/* Price range filter section */}
         <SidebarGroup>
-          <SidebarGroupLabel>Price Range (ETH)</SidebarGroupLabel>
+          <SidebarGroupLabel>Price Range (IDRX)</SidebarGroupLabel>
           <SidebarGroupContent className="grid grid-cols-2 gap-2">
             {/* Minimum price input */}
             <div>

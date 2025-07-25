@@ -52,6 +52,8 @@ type AuctionCardProps = {
     proposer: string;
     /** Name/title of the asset being auctioned */
     assetName: string;
+    /** Short description of the asset */
+    shortDescription?: string;
     /** URL of the asset image for display */
     imageUrl: string;
     /** Category classification of the asset */
@@ -103,7 +105,7 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
   useEffect(() => {
     // Skip timer setup for finished or non-live auctions
     if (isFinished || auction.status !== ProposalStatus.Live) {
-      if (isFinished) setTimeLeft("Lelang Selesai");
+      if (isFinished) setTimeLeft("Auction Ended");
       return;
     }
 
@@ -114,7 +116,7 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
 
       // Check if auction has ended
       if (remaining <= 0) {
-        setTimeLeft("Lelang Selesai");
+        setTimeLeft("Auction Ended");
         clearInterval(interval);
         return;
       }
@@ -124,7 +126,7 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
       const h = Math.floor((remaining % 86400) / 3600);
       const m = Math.floor((remaining % 3600) / 60);
       const s = remaining % 60;
-      setTimeLeft(`${d}h ${h}j ${m}m ${s}d`);
+      setTimeLeft(`${d}d ${h}h ${m}m ${s}s`);
     }, 1000);
 
     // Cleanup interval on component unmount
@@ -163,7 +165,7 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
     if (auction.status === ProposalStatus.Finished) {
       return (
         <Badge variant="secondary" className="absolute top-3 left-3">
-          <XCircle className="w-3 h-3 mr-1" /> Selesai
+          <XCircle className="w-3 h-3 mr-1" /> Finished
         </Badge>
       );
     }
@@ -197,9 +199,15 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
         <CardTitle className="text-lg font-semibold text-foreground truncate" title={auction.assetName}>
           {auction.assetName}
         </CardTitle>
+        {/* Short description */}
+        {auction.shortDescription && (
+          <p className="text-sm text-muted-foreground line-clamp-2 mt-1" title={auction.shortDescription}>
+            {auction.shortDescription}
+          </p>
+        )}
         <CardDescription className="text-sm flex items-center" title={auction.proposer}>
           <User className="w-4 h-4 mr-1.5" />
-          <span>Oleh: {shortenAddress(auction.proposer)}</span>
+          <span>By: {shortenAddress(auction.proposer)}</span>
         </CardDescription>
       </CardHeader>
 
@@ -211,11 +219,11 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
             <p className="text-sm text-muted-foreground">
               {isFinished
                 ? auction.highestBid > 0n
-                  ? "Harga Akhir"
-                  : "Tidak Terjual"
+                  ? "Final Price"
+                  : "Unsold"
                 : auction.highestBid > 0n
-                  ? "Tawaran Tertinggi"
-                  : "Harga Awal"}
+                  ? "Highest Bid"
+                  : "Starting Price"}
             </p>
             <p className="text-2xl font-bold text-primary">{formatEther(displayPrice)} IDRX</p>
           </div>
@@ -224,10 +232,10 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
           <div className="text-right">
             {!isFinished && (
               <>
-                <p className="text-sm text-muted-foreground">Sisa Waktu</p>
+                <p className="text-sm text-muted-foreground">Time Left</p>
                 <p className="text-lg font-semibold flex items-center">
                   <Clock className="w-4 h-4 mr-1" />
-                  {timeLeft || "Memuat..."}
+                  {timeLeft || "Loading..."}
                 </p>
               </>
             )}
@@ -239,7 +247,7 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
       <div className="p-4 pt-0 mt-auto">
         <Button asChild className="w-full" disabled={isFinished}>
           <Link href={linkToDetails}>
-            {isFinished ? "Lelang Selesai" : "Lihat Lelang"}
+            {isFinished ? "Auction Ended" : "View Auction"}
             {!isFinished && <ArrowRight className="ml-2 h-4 w-4" />}
           </Link>
         </Button>
