@@ -457,16 +457,12 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
           return;
         }
 
-        // Calculate optimal approval amount with buffer for gas efficiency
-        const additionalNeeded = bidAmountWei - allowance;
-        const bufferAmount = additionalNeeded / 1000n;
-        const totalApprovalNeeded = bidAmountWei + bufferAmount;
-
+        // Use exact bid amount for approval to avoid unlimited spending
         approve({
           address: auction.idrxToken,
           abi: erc20Abi,
           functionName: "approve",
-          args: [auctionAddress, totalApprovalNeeded],
+          args: [auctionAddress, bidAmountWei],
         });
       } catch (error) {
         // Handle approval process errors
