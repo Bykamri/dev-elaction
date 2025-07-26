@@ -135,7 +135,7 @@ export default function AuctionRequestDetailPage() {
    * @dev Production IDRX token address on deployed networks
    * @notice This should be updated with the actual production IDRX address
    */
-  const DEPLOYED_IDRX_ADDRESS = "0xD63029C1a3dA68b51c67c6D1DeC3DEe50D681661";
+  const DEPLOYED_IDRX_ADDRESS = "0x3BA691f5591aD777Cc4769306d9eA4767a0B6DB5";
 
   /**
    * @dev Determine IDRX token address based on environment
