@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartBarIcon, ChevronDownIcon, Gavel, HomeIcon, ShieldCheckIcon, UserIcon } from "lucide-react";
+import { ChartBarIcon, ChevronDownIcon, HomeIcon, ShieldCheckIcon, UserIcon } from "lucide-react";
 import { hardhat } from "viem/chains";
 import { Bars3Icon, CircleStackIcon, DocumentMagnifyingGlassIcon, DocumentPlusIcon } from "@heroicons/react/24/outline";
 import { FaucetButton, RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
@@ -237,7 +238,7 @@ export const Header = () => {
           {/* Brand logo and platform name */}
           <Link href="/" passHref className="flex items-center gap-2 ml-4 mr-6 shrink-0">
             <div className="flex items-center space-x-2">
-              <Gavel className="h-8 w-8 text-primary" />
+              <Image src="/logo.svg" alt="Elaction Logo" width={32} height={32} />
               <span className="text-xl font-bold">Elaction</span>
             </div>
           </Link>
@@ -270,7 +271,7 @@ export const Header = () => {
                   {/* Mobile menu logo and brand */}
                   <Link href="/" className="flex items-center gap-2 mb-6" onClick={() => setIsDrawerOpen(false)}>
                     <div className="flex items-center space-x-2">
-                      <Gavel className="h-8 w-8 text-primary" />
+                      <Image src="/logo.svg" alt="Elaction Logo" width={32} height={32} />
                       <span className="text-xl font-bold"> Elaction</span>
                     </div>
                   </Link>
