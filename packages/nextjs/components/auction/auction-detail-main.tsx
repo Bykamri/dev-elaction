@@ -62,6 +62,10 @@ interface AuctionDetailMainProps {
   onApprove: (amount: string) => void;
   /** Callback function to handle bid placement */
   onBid: (amount: string) => void;
+  /** Callback function to handle admin auction ending */
+  onEndAuction: () => void;
+  /** Boolean indicating if current user can end auctions (admin or deployer) */
+  canEndAuctions: boolean;
 }
 
 /**
@@ -97,6 +101,8 @@ export function AuctionDetailMain({
   buttonText,
   onApprove,
   onBid,
+  onEndAuction,
+  canEndAuctions,
 }: AuctionDetailMainProps) {
   // Navigation and wallet connection hooks
   const router = useRouter();
@@ -397,6 +403,45 @@ export function AuctionDetailMain({
                       </div>
                     </>
                   )}
+                </div>
+              )}
+
+              {/* Admin Finalize Auction Button - Shows when auction is finished */}
+              {isFinished && (
+                <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                      <User className="w-4 h-4" />
+                      <span className="text-sm font-medium">Admin Controls</span>
+                    </div>
+                    <p className="text-sm text-orange-600 dark:text-orange-400">
+                      {canEndAuctions
+                        ? "The auction time has expired. As a platform administrator, you can finalize this auction to complete the transaction."
+                        : "The auction time has expired. Only platform administrators can finalize expired auctions."}
+                    </p>
+                    <Button
+                      onClick={() => {
+                        console.log("🔴 Admin Finalize Auction button clicked");
+                        console.log("📊 Button state:", {
+                          canEndAuctions,
+                          isActionLoading,
+                          isFinished,
+                          disabled: isActionLoading || !canEndAuctions,
+                        });
+                        onEndAuction();
+                      }}
+                      disabled={isActionLoading || !canEndAuctions}
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-orange-200 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/20"
+                    >
+                      {isActionLoading
+                        ? buttonText
+                        : canEndAuctions
+                          ? "Finalize Auction"
+                          : "Finalize Auction (Admin Only)"}
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>

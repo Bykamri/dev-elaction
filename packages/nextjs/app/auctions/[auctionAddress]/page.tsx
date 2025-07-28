@@ -3,6 +3,7 @@
 import { use } from "react";
 import { notFound } from "next/navigation";
 import { AuctionDetailMain } from "~~/components/auction/auction-detail-main";
+import { useAdminRole } from "~~/hooks/useAdminRole";
 import { useAuctionDetails } from "~~/hooks/useAuctionDetails";
 
 /**
@@ -47,6 +48,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ auctio
    *   - isActionLoading: Loading state for user actions (bidding, approval)
    *   - handleApprove: Function to approve IDRX tokens for bidding
    *   - handleBid: Function to submit a bid to the auction
+   *   - handleEndAuction: Function to finalize auctions (admin only)
    */
   const {
     auction,
@@ -58,7 +60,15 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ auctio
     isActionLoading,
     handleApprove,
     handleBid,
+    handleEndAuction,
   } = useAuctionDetails(resolvedParams.auctionAddress as `0x${string}`);
+
+  /**
+   * @dev Custom hook for admin role verification
+   * @notice Provides administrative permission checking:
+   *   - canEndAuctions: Boolean indicating if user can finalize auctions
+   */
+  const { canEndAuctions } = useAdminRole();
 
   // ============ Loading State Handling ============
 
@@ -125,6 +135,8 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ auctio
         }
         onApprove={handleApprove} // Token approval handler
         onBid={handleBid} // Bid submission handler
+        onEndAuction={handleEndAuction} // Admin auction finalization handler
+        canEndAuctions={canEndAuctions} // Admin permission for auction ending
       />
     </main>
   );
