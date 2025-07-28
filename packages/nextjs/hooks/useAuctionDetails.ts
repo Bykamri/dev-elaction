@@ -55,6 +55,7 @@ type AuctionDetails = {
   highestBid: bigint; // Current highest bid amount in wei
   highestBidder: string; // Address of current highest bidder
   endTime: number; // Unix timestamp when auction ends
+  ended: boolean; // Whether auction has been finalized/ended by admin
   metadata: Metadata; // Resolved asset metadata from IPFS
   bidHistory: Bid[]; // Complete chronological bid history
   participantCount: number; // Number of unique bidders
@@ -114,19 +115,33 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
             if (!prevAuction) return null;
 
             // Prevent duplicate bid entries
-            if (prevAuction.bidHistory.some(b => b.amount === newBid.amount && b.bidder === newBid.bidder)) {
+            if (
+              prevAuction.bidHistory.some(
+                b => b.amount === newBid.amount && b.bidder.toLowerCase() === newBid.bidder.toLowerCase(),
+              )
+            ) {
               return prevAuction;
             }
 
-            // Track unique participants for count accuracy
-            const isNewParticipant = !prevAuction.bidHistory.some(b => b.bidder === newBid.bidder);
+            // Create updated bid history
+            const updatedBidHistory = [newBid, ...prevAuction.bidHistory];
+
+            // Calculate unique participants count properly (case-insensitive)
+            const uniqueParticipants = new Set(updatedBidHistory.map(b => b.bidder.toLowerCase())).size;
+
+            console.log("🔄 Real-time Participant Update:", {
+              newBidder: newBid.bidder,
+              previousCount: prevAuction.participantCount,
+              newCount: uniqueParticipants,
+              totalBids: updatedBidHistory.length,
+            });
 
             return {
               ...prevAuction,
               highestBid: newBid.amount,
               highestBidder: newBid.bidder,
-              bidHistory: [newBid, ...prevAuction.bidHistory],
-              participantCount: isNewParticipant ? prevAuction.participantCount + 1 : prevAuction.participantCount,
+              bidHistory: updatedBidHistory,
+              participantCount: uniqueParticipants,
             };
           });
         } catch (error) {
@@ -146,7 +161,7 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
 
       try {
         // Fetch all core auction data in parallel for efficiency
-        const [seller, nftAddress, nftTokenId, idrxToken, startingBid, highestBid, highestBidder, endTime] =
+        const [seller, nftAddress, nftTokenId, idrxToken, startingBid, highestBid, highestBidder, endTime, ended] =
           await Promise.all([
             publicClient.readContract({ address: auctionAddress, abi: auctionAbi, functionName: "seller" }),
             publicClient.readContract({ address: auctionAddress, abi: auctionAbi, functionName: "nft" }),
@@ -156,6 +171,7 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
             publicClient.readContract({ address: auctionAddress, abi: auctionAbi, functionName: "highestBid" }),
             publicClient.readContract({ address: auctionAddress, abi: auctionAbi, functionName: "highestBidder" }),
             publicClient.readContract({ address: auctionAddress, abi: auctionAbi, functionName: "endTime" }),
+            publicClient.readContract({ address: auctionAddress, abi: auctionAbi, functionName: "ended" }),
           ]);
 
         // Retrieve complete bid history from blockchain events
@@ -175,6 +191,17 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
         const history = bidLogs
           .map(log => decodeEventLog({ abi: auctionAbi, data: log.data, topics: log.topics }).args as Bid)
           .reverse();
+
+        // Calculate unique participants count properly
+        const uniqueParticipants = new Set(history.map(b => b.bidder.toLowerCase())).size;
+
+        // Debug logging for participant count
+        console.log("🔍 Participant Count Debug:", {
+          totalBids: history.length,
+          uniqueParticipants,
+          bidders: history.map(b => b.bidder),
+          uniqueBidders: [...new Set(history.map(b => b.bidder.toLowerCase()))],
+        });
 
         // Fetch NFT metadata from IPFS
         const tokenURI = await publicClient.readContract({
@@ -260,9 +287,10 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
           highestBid: highestBid as bigint,
           highestBidder: highestBidder as string,
           endTime: Number(endTime),
+          ended: ended as boolean,
           metadata: fetchedMetadata as Metadata,
           bidHistory: history,
-          participantCount: new Set(history.map(b => b.bidder)).size,
+          participantCount: uniqueParticipants,
         });
       } catch (error) {
         // Handle auction data fetching errors gracefully
@@ -426,6 +454,7 @@ export const useAuctionDetails = (auctionAddress: `0x${string}`) => {
     isRefetching, // Post-transaction refresh state
     timeLeft, // Formatted countdown display
     isFinished, // Whether auction has ended
+    isFinalized: auction?.ended || endAuctionStatus === "success", // Whether auction has been finalized by admin
     isActionLoading, // Any transaction in progress
     buttonText: getButtonText(), // Dynamic button text
 

@@ -128,7 +128,7 @@ export function DesktopFilters({
 
           {/* Price range filter section */}
           <div className="flex flex-col gap-2">
-            <Label>Price Range (ETH)</Label>
+            <Label>Price Range (IDRX)</Label>
             <div className="flex gap-2">
               <Input type="number" placeholder="Min" value={minPrice} onChange={e => setMinPrice(e.target.value)} />
               <Input type="number" placeholder="Max" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} />

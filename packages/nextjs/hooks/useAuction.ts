@@ -14,6 +14,7 @@ export interface Auction {
   proposalId: bigint; // Unique identifier for the auction proposal
   proposer: string; // Ethereum address of the auction creator
   assetName: string; // Display name of the asset being auctioned
+  shortDescription?: string; // Brief description for card display
   imageUrl: string; // URL to the asset's thumbnail/preview image
   category: string; // Asset category for filtering and organization
   startingBid: bigint; // Minimum bid amount in wei
@@ -21,6 +22,7 @@ export interface Auction {
   status: number; // Auction status code (2=Live, 3=Finished)
   auctionAddress: string; // Smart contract address for this specific auction
   endTime: bigint; // Unix timestamp when auction ends
+  participantCount: number; // Number of unique participants who have placed bids
 }
 
 /**
@@ -140,6 +142,7 @@ export const useAuctions = () => {
 
             // Fetch current auction state from individual auction contract
             let auctionDetails = { highestBid: 0n, endTime: 0n };
+            let participantCount = 0;
             const auctionAddress = proposal[5];
 
             // Only fetch auction details if contract has been deployed
@@ -158,6 +161,30 @@ export const useAuctions = () => {
                   }),
                 ]);
                 auctionDetails = { highestBid: bid as bigint, endTime: end as bigint };
+
+                // Fetch participant count from bid events
+                try {
+                  const bidLogs = await publicClient.getLogs({
+                    address: auctionAddress,
+                    event: {
+                      type: "event",
+                      name: "Bid",
+                      inputs: [
+                        { name: "bidder", type: "address", indexed: true },
+                        { name: "amount", type: "uint256", indexed: false },
+                      ],
+                    },
+                    fromBlock: 0n,
+                    toBlock: "latest",
+                  });
+
+                  // Calculate unique participants (case-insensitive)
+                  const uniqueBidders = new Set(bidLogs.map(log => log.topics[1]?.toLowerCase()).filter(Boolean));
+                  participantCount = uniqueBidders.size;
+                } catch (bidError) {
+                  // If bid events fail to fetch, keep default 0
+                  participantCount = 0;
+                }
               } catch (e) {
                 // Individual auction contract failures don't break the batch process
               }
@@ -168,6 +195,7 @@ export const useAuctions = () => {
               proposalId: BigInt(index),
               proposer: proposal[0],
               assetName: metadata.name || "Unnamed Asset",
+              shortDescription: metadata.shortDescription,
               imageUrl: metadata.thumbnail
                 ? `${gateway}/ipfs/${metadata.thumbnail.replace("ipfs://", "")}`
                 : "/placeholder.svg",
@@ -175,6 +203,7 @@ export const useAuctions = () => {
               startingBid: proposal[2],
               status: proposal[4],
               auctionAddress: proposal[5],
+              participantCount,
               ...auctionDetails,
             };
           }),

@@ -79,21 +79,26 @@ const AuctionsPage = () => {
   // ============ Auction Filtering Logic ============
 
   /**
-   * @dev Filters auctions based on user-selected criteria
+   * @dev Filters and sorts auctions based on user-selected criteria and optimal display order
    * @notice Memoized to optimize performance during filter changes
-   * @returns Array of filtered auction objects
+   * @returns Array of filtered and sorted auction objects
    *
    * Filtering Process:
    * 1. Status Filter: Check auction status (Live=2, Finished=3)
    * 2. Category Filter: Match auction category with selected filter
    * 3. Price Range Filter: Compare current bid/starting bid with price range
    *
+   * Sorting Logic:
+   * 1. Live auctions (status=2) appear first, sorted by end time (ending soonest first)
+   * 2. Finished auctions (status=3) appear last, sorted by end time (most recently ended first)
+   * 3. Other statuses appear in between, sorted by end time
+   *
    * Price Logic:
    * - Uses highestBid if available, otherwise falls back to startingBid
    * - Converts from Wei to Ether for human-readable comparison
    */
   const filteredAuctions = useMemo(() => {
-    return allAuctions.filter(auction => {
+    const filtered = allAuctions.filter(auction => {
       // Status Filter: Check if auction matches selected status
       if (filterStatus === "open" && auction.status !== 2 /* Live */) return false;
       if (filterStatus === "closed" && auction.status !== 3 /* Finished */) return false;
@@ -108,6 +113,43 @@ const AuctionsPage = () => {
 
       return true; // Auction passes all filter criteria
     });
+
+    // Sort auctions for optimal display order
+    const sorted = filtered.sort((a, b) => {
+      // Priority 1: Live auctions (status=2) come first
+      if (a.status === 2 && b.status !== 2) return -1;
+      if (b.status === 2 && a.status !== 2) return 1;
+
+      // Priority 2: Finished auctions (status=3) come last
+      if (a.status === 3 && b.status !== 3) return 1;
+      if (b.status === 3 && a.status !== 3) return -1;
+
+      // For auctions of the same status, sort by end time
+      if (a.status === 2 && b.status === 2) {
+        // Live auctions: sort by end time (ending soonest first)
+        return Number(a.endTime) - Number(b.endTime);
+      } else if (a.status === 3 && b.status === 3) {
+        // Finished auctions: sort by end time (most recently ended first)
+        return Number(b.endTime) - Number(a.endTime);
+      } else {
+        // Other statuses: sort by end time (ascending)
+        return Number(a.endTime) - Number(b.endTime);
+      }
+    });
+
+    // Debug: Log sorting results
+    console.log("📋 Auction Sorting Results:", {
+      totalAuctions: allAuctions.length,
+      filteredCount: filtered.length,
+      sortedOrder: sorted.map(auction => ({
+        address: auction.auctionAddress.substring(0, 8) + "...",
+        status: auction.status === 2 ? "LIVE" : auction.status === 3 ? "FINISHED" : "OTHER",
+        endTime: new Date(Number(auction.endTime) * 1000).toLocaleString(),
+        name: auction.assetName || "Unnamed",
+      })),
+    });
+
+    return sorted;
   }, [allAuctions, filterStatus, filterCategory, minPrice, maxPrice]);
 
   // ============ Filter Management Functions ============

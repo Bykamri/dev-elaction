@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CircleDotDashed, Clock, User, XCircle } from "lucide-react";
+import { ArrowRight, CircleDotDashed, Clock, User, Users, XCircle } from "lucide-react";
 import { formatEther } from "viem";
 import { Badge } from "~~/components/ui/badge";
 import { Button } from "~~/components/ui/button";
@@ -68,6 +68,8 @@ type AuctionCardProps = {
     auctionAddress: string;
     /** Unix timestamp when the auction ends */
     endTime: bigint;
+    /** Number of unique participants who have placed bids */
+    participantCount?: number;
   };
 };
 
@@ -196,9 +198,18 @@ export const AuctionCard = ({ auction }: AuctionCardProps) => {
 
       {/* Card header with asset name and seller information */}
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-semibold text-foreground truncate" title={auction.assetName}>
-          {auction.assetName}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-semibold text-foreground truncate flex-1" title={auction.assetName}>
+            {auction.assetName}
+          </CardTitle>
+          {/* Participant count next to title */}
+          {auction.participantCount !== undefined && auction.participantCount > 0 && (
+            <div className="flex items-center ml-2 text-xs text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-full border border-blue-200 dark:border-blue-800">
+              <Users className="w-3 h-3 mr-1" />
+              <span className="font-semibold">{auction.participantCount}</span>
+            </div>
+          )}
+        </div>
         {/* Short description */}
         {auction.shortDescription && (
           <p className="text-sm text-muted-foreground line-clamp-2 mt-1" title={auction.shortDescription}>

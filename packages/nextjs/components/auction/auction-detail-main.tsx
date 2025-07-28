@@ -52,6 +52,8 @@ interface AuctionDetailMainProps {
   timeLeft: string;
   /** Boolean indicating if the auction has finished */
   isFinished: boolean;
+  /** Boolean indicating if the auction has been finalized by admin */
+  isFinalized: boolean;
   /** Loading state for auction-related actions (approve/bid) */
   isActionLoading: boolean;
   /** Loading state for data refetching operations */
@@ -96,6 +98,7 @@ export function AuctionDetailMain({
   allowance,
   timeLeft,
   isFinished,
+  isFinalized,
   isActionLoading,
   isRefetching,
   buttonText,
@@ -107,6 +110,14 @@ export function AuctionDetailMain({
   // Navigation and wallet connection hooks
   const router = useRouter();
   const { address: connectedAddress } = useAccount();
+
+  // Debug: Log auction data to check participant count
+  console.log("🔍 Auction Detail Main - Auction Data:", {
+    auctionAddress: auction.auctionAddress,
+    participantCount: auction.participantCount,
+    bidHistoryLength: auction.bidHistory?.length || 0,
+    seller: auction.seller,
+  });
 
   /**
    * Formats asset attributes based on category configuration
@@ -154,6 +165,18 @@ export function AuctionDetailMain({
   // Extract and prepare auction data for rendering
   const metadata = auction.metadata;
   const biddingHistory: Bid[] = auction.bidHistory || [];
+
+  // Calculate participant count from bid history as fallback
+  const calculatedParticipantCount = new Set(biddingHistory.map(bid => bid.bidder.toLowerCase())).size;
+  const participantCount = auction.participantCount ?? calculatedParticipantCount;
+
+  console.log("🧮 Participant Count Calculation:", {
+    fromAuction: auction.participantCount,
+    calculated: calculatedParticipantCount,
+    final: participantCount,
+    bidHistoryLength: biddingHistory.length,
+  });
+
   const categoryInfo = categoryConfig[metadata.category] || categoryConfig["Default"];
   const IconComponent = categoryInfo.icon;
   const top5BiddingHistory = biddingHistory.slice(0, 5);
@@ -211,17 +234,27 @@ export function AuctionDetailMain({
 
         {/* Right section: Auction information and bidding interface (1/3 width on desktop) */}
         <div className="md:col-span-1 space-y-6">
-          {/* Auction Ended Banner - Prominent visual indicator */}
+          {/* Auction Status Banner - Prominent visual indicator */}
           {isFinished && (
-            <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 rounded-lg shadow-lg border-2 border-red-300">
+            <div
+              className={`p-4 rounded-lg shadow-lg border-2 text-white ${
+                isFinalized
+                  ? "bg-gradient-to-r from-green-500 to-green-600 border-green-300"
+                  : "bg-gradient-to-r from-red-500 to-red-600 border-red-300"
+              }`}
+            >
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Clock className="w-6 h-6" />
-                <span className="text-xl font-bold">AUCTION ENDED</span>
+                {isFinalized ? <Check className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
+                <span className="text-xl font-bold">{isFinalized ? "AUCTION FINALIZED" : "AUCTION ENDED"}</span>
               </div>
               <div className="text-center text-sm opacity-90">
                 {auction.highestBid > 0n
-                  ? `Won by ${auction.highestBidder.substring(0, 8)}... for ${formatEther(auction.highestBid)} IDRX`
-                  : "No bids were placed during this auction"}
+                  ? isFinalized
+                    ? `Completed! Won by ${auction.highestBidder.substring(0, 8)}... for ${formatEther(auction.highestBid)} IDRX`
+                    : `Won by ${auction.highestBidder.substring(0, 8)}... for ${formatEther(auction.highestBid)} IDRX`
+                  : isFinalized
+                    ? "Finalized - No bids were placed, item remains with owner"
+                    : "No bids were placed during this auction"}
               </div>
             </div>
           )}
@@ -258,6 +291,18 @@ export function AuctionDetailMain({
                   )}
                 </div>
               </div>
+
+              {/* Asset proposer information */}
+              <div className="flex items-center text-muted-foreground mb-2">
+                <User className="w-4 h-4 mr-2" />
+                <span className="text-sm">
+                  Proposed by:{" "}
+                  <span className="font-mono font-semibold">
+                    {auction.seller.substring(0, 8)}...{auction.seller.substring(auction.seller.length - 6)}
+                  </span>
+                </span>
+              </div>
+
               <CardDescription className="text-muted-foreground text-base">{metadata.shortDescription}</CardDescription>
             </CardHeader>
 
@@ -265,9 +310,11 @@ export function AuctionDetailMain({
             <CardContent className="space-y-4">
               {/* Auction status and participant count */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center text-muted-foreground">
+                <div className="flex items-center text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
                   <Users className="w-5 h-5 mr-2" />
-                  <span>{auction.participantCount} Participants</span>
+                  <span className="font-semibold">
+                    {participantCount} Participant{participantCount !== 1 ? "s" : ""}
+                  </span>
                 </div>
                 {/* Enhanced status badge with different styling */}
                 {!isFinished ? (
@@ -379,12 +426,14 @@ export function AuctionDetailMain({
                 </div>
               ) : (
                 /* Finished auction display */
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {auction.highestBid > 0n ? (
                     /* Auction with winner */
                     <>
                       <p className="text-lg text-muted-foreground">Final Bid</p>
                       <p className="text-5xl font-bold text-primary">{formatEther(auction.highestBid)} IDRX</p>
+
+                      {/* Winner Information */}
                       <div className="flex items-center text-muted-foreground">
                         <User className="w-6 h-6 mr-2" />
                         <span className="text-xl font-semibold">
@@ -406,14 +455,23 @@ export function AuctionDetailMain({
                 </div>
               )}
 
-              {/* Admin Finalize Auction Button - Shows when auction is finished */}
-              {isFinished && (
+              {/* Admin Finalize Auction Button - Shows when auction is finished but not yet finalized */}
+              {isFinished && !isFinalized && (
                 <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
                       <User className="w-4 h-4" />
                       <span className="text-sm font-medium">Admin Controls</span>
                     </div>
+
+                    {/* Asset Owner Information for Admin Reference */}
+                    <div className="text-xs text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 p-2 rounded">
+                      <strong>Asset Owner:</strong>{" "}
+                      <span className="font-mono">
+                        {auction.seller.substring(0, 12)}...{auction.seller.substring(auction.seller.length - 8)}
+                      </span>
+                    </div>
+
                     <p className="text-sm text-orange-600 dark:text-orange-400">
                       {canEndAuctions
                         ? "The auction time has expired. As a platform administrator, you can finalize this auction to complete the transaction."
@@ -441,6 +499,38 @@ export function AuctionDetailMain({
                           ? "Finalize Auction"
                           : "Finalize Auction (Admin Only)"}
                     </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Auction Finalized Status - Shows when auction has been finalized */}
+              {isFinished && isFinalized && (
+                <div className="mt-6 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                      <Check className="w-4 h-4" />
+                      <span className="text-sm font-medium">Auction Finalized</span>
+                    </div>
+
+                    {/* Asset Owner Information for Reference */}
+                    <div className="text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 p-2 rounded">
+                      <strong>Original Owner:</strong>{" "}
+                      <span className="font-mono">
+                        {auction.seller.substring(0, 12)}...{auction.seller.substring(auction.seller.length - 8)}
+                      </span>
+                    </div>
+
+                    <p className="text-sm text-green-600 dark:text-green-400">
+                      {auction.highestBid > 0n
+                        ? "This auction has been successfully finalized by the platform administrator. The ownership transfer process has been completed and the winner can now claim their asset."
+                        : "This auction has been finalized by the platform administrator. Since there were no bids, the item remains with the original owner."}
+                    </p>
+
+                    {/* Show transaction completion status */}
+                    <div className="flex items-center gap-2 text-green-700 dark:text-green-400 text-sm">
+                      <Check className="w-4 h-4" />
+                      <span className="font-medium">Transaction completed successfully</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -493,9 +583,77 @@ export function AuctionDetailMain({
                         <span className="text-sm font-semibold text-foreground">{attr.value}</span>
                       </div>
                     ))}
+
+                    {/* Asset ownership information separator */}
+                    <div className="border-t pt-4 mt-4">
+                      <h4 className="text-sm font-medium text-foreground mb-3">Auction Information</h4>
+
+                      {/* Asset Owner */}
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground font-medium">Asset Owner:</span>
+                        <span className="text-sm font-mono font-semibold text-foreground">
+                          {auction.seller.substring(0, 8)}...{auction.seller.substring(auction.seller.length - 6)}
+                        </span>
+                      </div>
+
+                      {/* Auction Address */}
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-sm text-muted-foreground font-medium">Auction Contract:</span>
+                        <span className="text-sm font-mono font-semibold text-foreground">
+                          {auction.auctionAddress.substring(0, 8)}...
+                          {auction.auctionAddress.substring(auction.auctionAddress.length - 6)}
+                        </span>
+                      </div>
+
+                      {/* Show winner information for finished auctions with bids */}
+                      {isFinished && auction.highestBid > 0n && (
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-sm text-muted-foreground font-medium">Auction Winner:</span>
+                          <span className="text-sm font-mono font-semibold text-green-600 dark:text-green-400">
+                            {auction.highestBidder.substring(0, 8)}...
+                            {auction.highestBidder.substring(auction.highestBidder.length - 6)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">No specific attributes available for this asset.</p>
+                  <div className="space-y-4">
+                    <p className="text-muted-foreground">No specific attributes available for this asset.</p>
+
+                    {/* Asset ownership information for assets without attributes */}
+                    <div className="border-t pt-4 mt-4">
+                      <h4 className="text-sm font-medium text-foreground mb-3">Auction Information</h4>
+
+                      {/* Asset Owner */}
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground font-medium">Asset Owner:</span>
+                        <span className="text-sm font-mono font-semibold text-foreground">
+                          {auction.seller.substring(0, 8)}...{auction.seller.substring(auction.seller.length - 6)}
+                        </span>
+                      </div>
+
+                      {/* Auction Address */}
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-sm text-muted-foreground font-medium">Auction Contract:</span>
+                        <span className="text-sm font-mono font-semibold text-foreground">
+                          {auction.auctionAddress.substring(0, 8)}...
+                          {auction.auctionAddress.substring(auction.auctionAddress.length - 6)}
+                        </span>
+                      </div>
+
+                      {/* Show winner information for finished auctions with bids */}
+                      {isFinished && auction.highestBid > 0n && (
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-sm text-muted-foreground font-medium">Auction Winner:</span>
+                          <span className="text-sm font-mono font-semibold text-green-600 dark:text-green-400">
+                            {auction.highestBidder.substring(0, 8)}...
+                            {auction.highestBidder.substring(auction.highestBidder.length - 6)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>

@@ -45,6 +45,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ auctio
    *   - isRefetching: Loading state for data updates/refetches
    *   - timeLeft: Remaining time until auction ends (in seconds)
    *   - isFinished: Boolean indicating if auction has ended
+   *   - isFinalized: Boolean indicating if auction has been finalized by admin
    *   - isActionLoading: Loading state for user actions (bidding, approval)
    *   - handleApprove: Function to approve IDRX tokens for bidding
    *   - handleBid: Function to submit a bid to the auction
@@ -57,6 +58,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ auctio
     isRefetching,
     timeLeft,
     isFinished,
+    isFinalized,
     isActionLoading,
     handleApprove,
     handleBid,
@@ -109,7 +111,19 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ auctio
     bidHistory: auction.bidHistory, // Array of all bids placed on this auction
     endTime: BigInt(auction.endTime), // Auction end timestamp as BigInt
     auctionAddress: auction.auctionAddress, // Contract address of this auction
+    seller: auction.seller, // Ethereum address of the asset seller/owner
+    highestBidder: auction.highestBidder, // Address of current highest bidder
+    ended: auction.ended, // Boolean indicating if auction has been finalized by admin
+    participantCount: auction.participantCount, // Number of unique participants/bidders
   };
+
+  // Debug: Log auction data being passed to component
+  console.log("📋 Auction Detail Page - Data Flow:", {
+    originalParticipantCount: auction.participantCount,
+    componentParticipantCount: auctionForComponent.participantCount,
+    bidHistoryLength: auction.bidHistory?.length || 0,
+    auctionAddress: auction.auctionAddress,
+  });
 
   // ============ Main Component Render ============
 
@@ -124,6 +138,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ auctio
         allowance={allowance} // Current IDRX token allowance for bidding
         timeLeft={timeLeft} // Remaining auction time in seconds
         isFinished={isFinished} // Whether auction has ended
+        isFinalized={isFinalized} // Whether auction has been finalized by admin
         isActionLoading={isActionLoading} // Loading state for user actions
         isRefetching={isRefetching} // Loading state for data updates
         buttonText={

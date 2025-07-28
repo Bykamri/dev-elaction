@@ -130,14 +130,14 @@ export function AuctionRequestCard({ proposalId, auctionFactoryContract }: Aucti
             interval = setInterval(() => {
               const remaining = Number(end) - Math.floor(Date.now() / 1000);
               if (remaining <= 0) {
-                setTimeLeft("Selesai");
+                setTimeLeft("Finished");
                 clearInterval(interval);
               } else {
                 // Calculate and format remaining time (days, hours, minutes)
                 const d = Math.floor(remaining / 86400);
                 const h = Math.floor((remaining % 86400) / 3600);
                 const m = Math.floor((remaining % 3600) / 60);
-                setTimeLeft(`${d}h ${h}j ${m}m`);
+                setTimeLeft(`${d}d ${h}h ${m}m`);
               }
             }, 1000);
           } catch {
@@ -228,7 +228,7 @@ export function AuctionRequestCard({ proposalId, auctionFactoryContract }: Aucti
       {/* Card header with asset information */}
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold text-foreground truncate" title={assetName}>
-          {assetName || "Memuat nama..."}
+          {assetName || "Loading name..."}
         </CardTitle>
         <CardDescription className="text-muted-foreground line-clamp-2 text-sm">{description || "..."}</CardDescription>
       </CardHeader>
@@ -238,14 +238,14 @@ export function AuctionRequestCard({ proposalId, auctionFactoryContract }: Aucti
         {/* Seller information display */}
         <div className="flex items-center text-muted-foreground text-sm">
           <User className="w-4 h-4 mr-1" />
-          <span className="truncate">Diajukan oleh: {shortenAddress(sellerAddress)}</span>
+          <span className="truncate">Proposed by: {shortenAddress(sellerAddress)}</span>
         </div>
 
         {/* Conditional pricing information based on auction status */}
         {currentStatus === ProposalStatus.Pending && (
           <div className="flex items-center text-muted-foreground text-sm">
             <DollarSign className="w-4 h-4 mr-1" />
-            <span>Harga Awal: {formatEther(startingBid)} ETH</span>
+            <span>Starting Price: {formatEther(startingBid)} IDRX</span>
           </div>
         )}
 
@@ -255,8 +255,8 @@ export function AuctionRequestCard({ proposalId, auctionFactoryContract }: Aucti
             <DollarSign className="w-4 h-4 mr-1" />
             <span>
               {highestBid > 0n
-                ? `Tawaran Tertinggi: ${formatEther(highestBid)} ETH`
-                : `Harga Awal: ${formatEther(startingBid)} ETH`}
+                ? `Highest Bid: ${formatEther(highestBid)} IDRX`
+                : `Starting Price: ${formatEther(startingBid)} IDRX`}
             </span>
             {/* Real-time countdown timer */}
             <p className="ml-auto text-xs font-semibold">{timeLeft}</p>
@@ -267,9 +267,7 @@ export function AuctionRequestCard({ proposalId, auctionFactoryContract }: Aucti
         {currentStatus === ProposalStatus.Finished && (
           <div className="flex items-center text-muted-foreground text-sm">
             <DollarSign className="w-4 h-4 mr-1" />
-            <span>
-              {highestBid > 0n ? `Harga Akhir: ${formatEther(highestBid)} ETH` : "Tidak Terjual (Tidak ada penawar)"}
-            </span>
+            <span>{highestBid > 0n ? `Final Price: ${formatEther(highestBid)} IDRX` : "Unsold (No bidders)"}</span>
           </div>
         )}
 
@@ -277,7 +275,7 @@ export function AuctionRequestCard({ proposalId, auctionFactoryContract }: Aucti
         <div className="flex flex-col gap-2 pt-2">
           <Button asChild className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
             <Link href={`/admin/requests/${proposalId.toString()}`}>
-              Lihat Detail
+              View Details
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
