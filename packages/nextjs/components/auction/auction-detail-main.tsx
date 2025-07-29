@@ -14,6 +14,7 @@ import { Label } from "~~/components/ui/label";
 import { Separator } from "~~/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~~/components/ui/tabs";
 import { categoryConfig, dynamicAssetFields } from "~~/lib/asset-configs";
+import { shortenAddress } from "~~/utils/addressFormat";
 
 /**
  * @fileoverview Auction Detail Main Component
@@ -250,8 +251,8 @@ export function AuctionDetailMain({
               <div className="text-center text-sm opacity-90">
                 {auction.highestBid > 0n
                   ? isFinalized
-                    ? `Completed! Won by ${auction.highestBidder.substring(0, 8)}... for ${formatEther(auction.highestBid)} IDRX`
-                    : `Won by ${auction.highestBidder.substring(0, 8)}... for ${formatEther(auction.highestBid)} IDRX`
+                    ? `Completed! Won by ${shortenAddress(auction.highestBidder)} for ${formatEther(auction.highestBid)} IDRX`
+                    : `Won by ${shortenAddress(auction.highestBidder)} for ${formatEther(auction.highestBid)} IDRX`
                   : isFinalized
                     ? "Finalized - No bids were placed, item remains with owner"
                     : "No bids were placed during this auction"}
@@ -296,10 +297,7 @@ export function AuctionDetailMain({
               <div className="flex items-center text-muted-foreground mb-2">
                 <User className="w-4 h-4 mr-2" />
                 <span className="text-sm">
-                  Proposed by:{" "}
-                  <span className="font-mono font-semibold">
-                    {auction.seller.substring(0, 8)}...{auction.seller.substring(auction.seller.length - 6)}
-                  </span>
+                  Proposed by: <span className="font-mono font-semibold">{shortenAddress(auction.seller)}</span>
                 </span>
               </div>
 
@@ -415,7 +413,7 @@ export function AuctionDetailMain({
                           <li key={index} className="flex items-center justify-between text-muted-foreground text-sm">
                             <div className="flex items-center">
                               <User className="w-3 h-3 mr-1" />
-                              <span>{bid.bidder.substring(0, 8)}...</span>
+                              <span>{shortenAddress(bid.bidder)}</span>
                             </div>
                             <div className="font-semibold text-foreground">{formatEther(bid.amount)} IDRX</div>
                           </li>
@@ -436,9 +434,7 @@ export function AuctionDetailMain({
                       {/* Winner Information */}
                       <div className="flex items-center text-muted-foreground">
                         <User className="w-6 h-6 mr-2" />
-                        <span className="text-xl font-semibold">
-                          Winner: {auction.highestBidder.substring(0, 8)}...
-                        </span>
+                        <span className="text-xl font-semibold">Winner: {shortenAddress(auction.highestBidder)}</span>
                       </div>
                     </>
                   ) : (
@@ -466,10 +462,7 @@ export function AuctionDetailMain({
 
                     {/* Asset Owner Information for Admin Reference */}
                     <div className="text-xs text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 p-2 rounded">
-                      <strong>Asset Owner:</strong>{" "}
-                      <span className="font-mono">
-                        {auction.seller.substring(0, 12)}...{auction.seller.substring(auction.seller.length - 8)}
-                      </span>
+                      <strong>Asset Owner:</strong> <span className="font-mono">{shortenAddress(auction.seller)}</span>
                     </div>
 
                     <p className="text-sm text-orange-600 dark:text-orange-400">
@@ -515,9 +508,7 @@ export function AuctionDetailMain({
                     {/* Asset Owner Information for Reference */}
                     <div className="text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 p-2 rounded">
                       <strong>Original Owner:</strong>{" "}
-                      <span className="font-mono">
-                        {auction.seller.substring(0, 12)}...{auction.seller.substring(auction.seller.length - 8)}
-                      </span>
+                      <span className="font-mono">{shortenAddress(auction.seller)}</span>
                     </div>
 
                     <p className="text-sm text-green-600 dark:text-green-400">
@@ -592,7 +583,7 @@ export function AuctionDetailMain({
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground font-medium">Asset Owner:</span>
                         <span className="text-sm font-mono font-semibold text-foreground">
-                          {auction.seller.substring(0, 8)}...{auction.seller.substring(auction.seller.length - 6)}
+                          {shortenAddress(auction.seller)}
                         </span>
                       </div>
 
@@ -600,8 +591,7 @@ export function AuctionDetailMain({
                       <div className="flex justify-between items-center mt-2">
                         <span className="text-sm text-muted-foreground font-medium">Auction Contract:</span>
                         <span className="text-sm font-mono font-semibold text-foreground">
-                          {auction.auctionAddress.substring(0, 8)}...
-                          {auction.auctionAddress.substring(auction.auctionAddress.length - 6)}
+                          {shortenAddress(auction.auctionAddress)}
                         </span>
                       </div>
 
@@ -610,8 +600,7 @@ export function AuctionDetailMain({
                         <div className="flex justify-between items-center mt-2">
                           <span className="text-sm text-muted-foreground font-medium">Auction Winner:</span>
                           <span className="text-sm font-mono font-semibold text-green-600 dark:text-green-400">
-                            {auction.highestBidder.substring(0, 8)}...
-                            {auction.highestBidder.substring(auction.highestBidder.length - 6)}
+                            {shortenAddress(auction.highestBidder)}
                           </span>
                         </div>
                       )}
@@ -629,7 +618,7 @@ export function AuctionDetailMain({
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground font-medium">Asset Owner:</span>
                         <span className="text-sm font-mono font-semibold text-foreground">
-                          {auction.seller.substring(0, 8)}...{auction.seller.substring(auction.seller.length - 6)}
+                          {shortenAddress(auction.seller)}
                         </span>
                       </div>
 
@@ -637,8 +626,7 @@ export function AuctionDetailMain({
                       <div className="flex justify-between items-center mt-2">
                         <span className="text-sm text-muted-foreground font-medium">Auction Contract:</span>
                         <span className="text-sm font-mono font-semibold text-foreground">
-                          {auction.auctionAddress.substring(0, 8)}...
-                          {auction.auctionAddress.substring(auction.auctionAddress.length - 6)}
+                          {shortenAddress(auction.auctionAddress)}
                         </span>
                       </div>
 
@@ -647,8 +635,7 @@ export function AuctionDetailMain({
                         <div className="flex justify-between items-center mt-2">
                           <span className="text-sm text-muted-foreground font-medium">Auction Winner:</span>
                           <span className="text-sm font-mono font-semibold text-green-600 dark:text-green-400">
-                            {auction.highestBidder.substring(0, 8)}...
-                            {auction.highestBidder.substring(auction.highestBidder.length - 6)}
+                            {shortenAddress(auction.highestBidder)}
                           </span>
                         </div>
                       )}
@@ -673,7 +660,7 @@ export function AuctionDetailMain({
                       <li key={index} className="flex items-center justify-between text-muted-foreground">
                         <div className="flex items-center">
                           <User className="w-4 h-4 mr-2" />
-                          <span>{bid.bidder.substring(0, 8)}...</span>
+                          <span>{shortenAddress(bid.bidder)}</span>
                         </div>
                         <div className="flex items-center font-semibold text-foreground">
                           <DollarSign className="w-4 h-4 mr-1" />
