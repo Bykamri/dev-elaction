@@ -1,15 +1,16 @@
-# Elaction - Decentralized Real Estate Auction Platform
+# Elaction - Decentralized Auctions for High-Value Assets
 
-<h4 align="center">
-  <a href="#features">Features</a> |
-  <a href="#quick-start">Quick Start</a> |
-  <a href="#architecture">Architecture</a> |
-  <a href="#api-documentation">API</a>
-</h4>
+
 
 🏗️ A comprehensive decentralized auction platform for real estate assets built on Ethereum blockchain. This platform enables secure, transparent, and efficient real estate auctions with integrated review systems, role-based access control, and comprehensive asset management.
 
 ⚙️ Built using NextJS, XellarKit, Hardhat, Wagmi, Viem, TypeScript, Shadcn/ui and Tailwind CSS.
+
+🌍 [Auction Factory Address](https://sepolia-blockscout.lisk.com/address/0x7aBBDFe769921f09aB6040221Dea81e4539f5C92)
+
+🌍 [RwaNFT Address](https://sepolia-blockscout.lisk.com/address/0x532EEBed813ed3a3822DA14983AA209F8c783A14)
+
+🌍 [NFT Token ](https://sepolia-blockscout.lisk.com/token/0x532EEBed813ed3a3822DA14983AA209F8c783A14)
 
 ## 🌟 Key Features
 
